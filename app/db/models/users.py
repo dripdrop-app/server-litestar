@@ -1,11 +1,9 @@
 from litestar.plugins.sqlalchemy import base, repository
 from sqlalchemy import event
 from sqlalchemy.orm import Mapped, mapped_column
-from passlib.context import CryptContext
+import bcrypt
 
 from sqlalchemy.ext.asyncio import AsyncSession
-
-password_context = CryptContext(schemes=["bcrypt", "argon2"])
 
 
 class User(base.UUIDAuditBase):
@@ -28,4 +26,6 @@ async def provide_users_repo(db_session: AsyncSession):
 @event.listens_for(User, "init")
 def init_user(target, args, kwargs):
     if "password" in kwargs:
-        kwargs["password"] = password_context.hash(kwargs["password"])
+        kwargs["password"] = bcrypt.hashpw(
+            bytes(kwargs["password"], encoding="utf-8"), bcrypt.gensalt()
+        )

@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     profiles:
+      - test
       - prod
     restart: unless-stopped
   postgres: &postgres
@@ -12,6 +13,7 @@ services:
     image: postgres:14
     restart: unless-stopped
     profiles:
+      - test
       - prod
     environment:
       POSTGRES_USER: dripdrop
@@ -36,6 +38,7 @@ services:
     image: redis
     restart: unless-stopped
     profiles:
+      - test
       - prod
     volumes:
       - type: volume

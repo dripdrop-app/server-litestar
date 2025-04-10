@@ -28,6 +28,10 @@ services:
     <<: *postgres
     profiles:
       - dev
+    volumes:
+      - type: volume
+        source: postgres_test_volume
+        target: /var/lib/postgresql/data
     ports:
       - target: 5432
         published: 5432
@@ -48,6 +52,10 @@ services:
     <<: *redis
     profiles:
       - dev
+    volumes:
+      - type: volume
+        source: redis_test_volume
+        target: /data
     ports:
       - target: 6379
         published: 6379
@@ -56,4 +64,6 @@ services:
 
 volumes:
   postgres_volume: {}
+  postgres_test_volume: {}
   redis_volume: {}
+  redis_test_volume: {}

@@ -15,7 +15,7 @@ from advanced_alchemy.types import EncryptedString, EncryptedText, GUID, ORA_JSO
 from sqlalchemy import Text  # noqa: F401
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 __all__ = ["downgrade", "upgrade", "schema_upgrades", "schema_downgrades", "data_upgrades", "data_downgrades"]
 

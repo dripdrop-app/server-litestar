@@ -40,7 +40,12 @@ def order_columns(
     Returns:
         The operation to create the table.
     """
-    special_names = {"id": -100, "sa_orm_sentinel": 3001, "created_at": 3002, "updated_at": 3003}
+    special_names = {
+        "id": -100,
+        "sa_orm_sentinel": 3001,
+        "created_at": 3002,
+        "updated_at": 3003,
+    }
     cols_by_key = [  # pyright: ignore[reportUnknownVariableType]
         (
             special_names.get(col.key, index) if isinstance(col, Column) else 2000,

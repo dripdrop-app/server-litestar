@@ -1,10 +1,11 @@
 from typing import Annotated
-from litestar import Controller, post, Request
-from litestar.exceptions import NotFoundException, HTTPException
-from litestar.params import Body
-import bcrypt
 
-from app.db.models.users import UserRespository, User
+import bcrypt
+from litestar import Controller, Request, post
+from litestar.exceptions import HTTPException, NotFoundException
+from litestar.params import Body
+
+from app.db.models.users import User, UserRespository
 from app.models.authentication import LoginUser
 
 

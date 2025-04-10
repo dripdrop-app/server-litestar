@@ -1,9 +1,8 @@
+import bcrypt
 from litestar.plugins.sqlalchemy import base, repository
 from sqlalchemy import event
-from sqlalchemy.orm import Mapped, mapped_column
-import bcrypt
-
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class User(base.UUIDAuditBase):

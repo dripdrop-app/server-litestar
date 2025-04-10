@@ -10,15 +10,15 @@ import warnings
 from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
-from alembic import op
 from advanced_alchemy.types import (
-    EncryptedString,
-    EncryptedText,
     GUID,
     ORA_JSONB,
     DateTimeUTC,
+    EncryptedString,
+    EncryptedText,
     StoredObject,
 )
+from alembic import op
 from sqlalchemy import Text  # noqa: F401
 
 if TYPE_CHECKING:

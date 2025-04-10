@@ -8,12 +8,10 @@ from litestar.stores.redis import RedisStore
 from litestar.stores.registry import StoreRegistry
 from litestar.template.config import TemplateConfig
 
+from app.controllers import AuthenticationController
 from app.db import sqlalchemy_config
 from app.session import session_auth
 from app.settings import settings
-
-from app.controllers import AuthenticationController
-
 
 app = Litestar(
     on_app_init=[session_auth.on_app_init],

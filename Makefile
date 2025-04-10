@@ -8,7 +8,7 @@ install:
 
 .PHONY: lint
 lint:
-	ruff check --fix
+	ruff check --select I --fix
 
 .PHONY: test
 test:
@@ -21,3 +21,7 @@ deploy-local:
 .PHONY: run
 run:
 	litestar run
+
+.PHONY: clean
+clean:
+	rm -rf $(shell find app -name __pycache__)

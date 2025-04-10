@@ -1,22 +1,18 @@
 from typing import Annotated
 from litestar import Controller, post, Request
 from litestar.exceptions import NotFoundException, HTTPException
-from litestar.di import Provide
 from litestar.params import Body
 
-from app.authentication.db import (
-    provide_users_repo,
+from app.db.models.users import (
     UserRespository,
     User,
     password_context,
 )
-from app.authentication.models import LoginUser
+from app.models.authentication import LoginUser
 
 
 class AuthenticationController(Controller):
     path = "auth"
-
-    dependencies = {"users_repo": Provide(provide_users_repo)}
 
     @post("/login")
     async def login(

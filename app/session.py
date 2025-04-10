@@ -7,7 +7,7 @@ from litestar.middleware.session.server_side import (
 )
 from litestar.security.session_auth import SessionAuth
 
-from app.authentication.db import User, UserRespository, provide_users_repo
+from app.db.models.users import User, UserRespository, provide_users_repo
 
 
 async def retrieve_user_handler(
@@ -32,6 +32,6 @@ session_auth = SessionAuth[User, ServerSideSessionBackend](
         "/auth/verify",
         "/auth/sendreset",
         "/auth/reset",
-        "schema",
+        "/schema",
     ],
 )

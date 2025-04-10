@@ -17,3 +17,7 @@ test:
 .PHONY: deploy-local
 deploy-local:
 	docker compose --profile dev up -d 
+
+.PHONY: run
+run:
+	litestar run

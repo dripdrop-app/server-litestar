@@ -1,0 +1,39 @@
+services:
+  dev-server:
+    container_name: dev-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles:
+      - dev
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+    ports:
+      - target: 8000
+        published: 8000
+        protocol: tcp
+        mode: host
+  postgres:
+    container_name: postgres
+    image: postgres:14
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dripdrop
+      POSTGRES_PASSWORD: dripdrop
+      POSTGRES_DB: dripdrop
+    volumes:
+      - type: bind
+        source: data/db
+        target: /var/lib/postgresql/data
+  redis:
+    container_name: redis
+    image: redis
+    restart: unless-stopped
+    user: ${PUID}:${PGID}
+    volumes:
+      - type: bind
+        source: data/redis
+        target: /data

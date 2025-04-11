@@ -19,12 +19,15 @@ class UserRespository(repository.SQLAlchemyAsyncRepository[User]):
 
 
 async def provide_users_repo(db_session: AsyncSession):
-    return UserRespository(session=db_session)
+    return UserRespository(session=db_session, auto_commit=True)
 
 
 @event.listens_for(User, "init")
 def init_user(target, args, kwargs):
     if "password" in kwargs:
-        kwargs["password"] = bcrypt.hashpw(
-            bytes(kwargs["password"], encoding="utf-8"), bcrypt.gensalt()
+        kwargs["password"] = str(
+            bcrypt.hashpw(
+                bytes(kwargs["password"], encoding="utf-8"), bcrypt.gensalt()
+            ),
+            encoding="utf-8",
         )

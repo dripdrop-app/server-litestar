@@ -1,12 +1,13 @@
-from pathlib import Path
 from unittest import IsolatedAsyncioTestCase
 
 from faker import Faker
-from litestar.testing import subprocess_async_client
+from litestar.testing import AsyncTestClient
 from redis.asyncio.client import Redis
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from app import app
 from app.db import sqlalchemy_config
-from app.db.models import users
+from app.db.models.users import User, provide_users_repo
 from app.services import temp_files
 from app.settings import ENV, settings
 
@@ -20,11 +21,7 @@ class BaseTestCase(IsolatedAsyncioTestCase):
         await self._init_db()
         await self._init_redis()
 
-        self.client = await self.enterAsyncContext(
-            subprocess_async_client(
-                workdir=Path(__file__).parent.parent.parent, app="app:app"
-            )
-        )
+        self.client = await self.enterAsyncContext(AsyncTestClient(app))
 
         self.faker = Faker()
 
@@ -33,11 +30,12 @@ class BaseTestCase(IsolatedAsyncioTestCase):
         self.addAsyncCleanup(temp_files.cleanup_temp_directory)
 
     async def _init_db(self):
-        sqlalchemy_async_engine = sqlalchemy_config.get_engine()
-        async with sqlalchemy_async_engine.begin() as conn:
+        sqlalchemy_engine = create_async_engine(settings.async_database_url)
+        async with sqlalchemy_engine.begin() as conn:
             await conn.run_sync(sqlalchemy_config.metadata.drop_all)
             await conn.run_sync(sqlalchemy_config.metadata.create_all)
-        self.db_session = await self.enterAsyncContext(sqlalchemy_config.get_session())
+        sessionmaker = async_sessionmaker(sqlalchemy_engine)
+        self.db_session = await self.enterAsyncContext(sessionmaker())
 
     async def _init_redis(self):
         self.redis = Redis.from_url(settings.redis_url)
@@ -57,12 +55,13 @@ class BaseTestCase(IsolatedAsyncioTestCase):
         admin: bool = False,
         verified: bool = True,
     ):
-        users_repo = await users.provide_users_repo(db_session=self.db_session)
+        users_repo = await provide_users_repo(db_session=self.db_session)
         return await users_repo.add(
-            users.User(
+            User(
                 email=email or self.faker.email(),
                 password=password or self.faker.password(),
                 admin=admin,
                 verified=verified,
-            )
+            ),
+            auto_commit=True,
         )

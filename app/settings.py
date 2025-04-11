@@ -21,7 +21,6 @@ class Settings(BaseSettings):
     aws_s3_artwork_folder: str
     aws_s3_bucket: str
     aws_s3_music_folder: str
-    database_url: str
     env: ENV = ENV.DEVELOPMENT
     google_api_key: str
     invidious_api_url: str

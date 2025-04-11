@@ -1,8 +1,11 @@
 from typing import Annotated
 
 import bcrypt
-from litestar import Controller, Request, post
-from litestar.exceptions import HTTPException, NotFoundException
+from litestar import Controller, Request, post, status_codes
+from litestar.exceptions import (
+    NotAuthorizedException,
+    NotFoundException,
+)
 from litestar.params import Body
 
 from app.db.models.users import User, UserRespository
@@ -12,7 +15,11 @@ from app.models.authentication import LoginUser
 class AuthenticationController(Controller):
     path = "auth"
 
-    @post("/login")
+    @post(
+        "/login",
+        status_code=status_codes.HTTP_200_OK,
+        raises=[NotFoundException, NotAuthorizedException],
+    )
     async def login(
         self,
         data: Annotated[LoginUser, Body()],
@@ -27,8 +34,8 @@ class AuthenticationController(Controller):
             bytes(existing_user.password, encoding="utf-8"),
         )
         if not password_verified:
-            raise HTTPException(detail="Incorrect Credentials.")
+            raise NotAuthorizedException(detail="Incorrect Credentials.")
         if not existing_user.verified:
-            raise HTTPException(detail="Account is not verified.")
+            raise NotAuthorizedException(detail="Account is not verified.")
         request.set_session({"user_id": existing_user.id})
         return {"detail": "Success."}

@@ -55,6 +55,7 @@ class BaseTestCase(IsolatedAsyncioTestCase):
             "/api/auth/login", json={"email": email, "password": password}
         )
         self.assertEqual(response.status_code, status_codes.HTTP_200_OK)
+        self.assertNotIn(self.client.cookies.get("session"), [None, "null"])
 
     async def create_user(
         self,

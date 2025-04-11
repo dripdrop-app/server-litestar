@@ -10,7 +10,7 @@ from litestar.template.config import TemplateConfig
 from app.controllers import AuthenticationController
 from app.db import sqlalchemy_config
 from app.session import session_auth
-from app.settings import settings
+from app.settings import ENV, settings
 
 api_router = Router(path="/api", route_handlers=[AuthenticationController])
 
@@ -23,4 +23,5 @@ app = Litestar(
         directory=glob("app/**/templates", recursive=True),
         engine=JinjaTemplateEngine,
     ),
+    debug=settings.env != ENV.PRODUCTION,
 )

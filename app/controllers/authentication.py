@@ -4,13 +4,15 @@ import bcrypt
 from litestar import Controller, Request, get, post, status_codes
 from litestar.di import Provide
 from litestar.exceptions import (
+    ClientException,
     NotAuthorizedException,
     NotFoundException,
 )
 from litestar.params import Body
 
 from app.db.models.users import User, UserRespository, provide_users_repo
-from app.models.authentication import LoginUser, SessionUser
+from app.listeners import LISTENER
+from app.models.authentication import CreateUser, LoginUser, SessionUser
 
 
 class AuthenticationController(Controller):
@@ -51,4 +53,18 @@ class AuthenticationController(Controller):
     @get("/logout", status_code=status_codes.HTTP_200_OK)
     async def logout(self, request: Request) -> dict:
         request.clear_session()
+        return {"detail": "Success."}
+
+    @post("/create", status_code=status_codes.HTTP_200_OK, raises=[ClientException])
+    async def create_account(
+        self,
+        data: Annotated[CreateUser, Body()],
+        users_repo: UserRespository,
+        request: Request,
+    ):
+        existing_user = await users_repo.get_one_or_none(User.email == data.email)
+        if existing_user:
+            raise ClientException(detail="User with this email exists.")
+        await users_repo.add(User(email=data.email, password=data.password))
+        request.app.emit(LISTENER.USER_CREATED)
         return {"detail": "Success."}

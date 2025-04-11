@@ -4,7 +4,7 @@ makemigration:
 
 .PHONY: install
 install:
-	uv sync && pre-commit install
+	uv sync && uv run pre-commit install
 
 .PHONY: lint
 lint:

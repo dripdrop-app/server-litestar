@@ -1,6 +1,7 @@
 from unittest import IsolatedAsyncioTestCase
 
 from faker import Faker
+from litestar import status_codes
 from litestar.testing import AsyncTestClient
 from redis.asyncio.client import Redis
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -17,11 +18,11 @@ class BaseTestCase(IsolatedAsyncioTestCase):
         self.maxDiff = None
         self.assertEqual(settings.env, ENV.TESTING)
 
+        self.client = await self.enterAsyncContext(AsyncTestClient(app))
+
         await self._init_temp()
         await self._init_db()
         await self._init_redis()
-
-        self.client = await self.enterAsyncContext(AsyncTestClient(app))
 
         self.faker = Faker()
 
@@ -36,6 +37,7 @@ class BaseTestCase(IsolatedAsyncioTestCase):
             await conn.run_sync(sqlalchemy_config.metadata.create_all)
         sessionmaker = async_sessionmaker(sqlalchemy_engine)
         self.db_session = await self.enterAsyncContext(sessionmaker())
+        self.addAsyncCleanup(sqlalchemy_engine.dispose)
 
     async def _init_redis(self):
         self.redis = Redis.from_url(settings.redis_url)
@@ -47,6 +49,12 @@ class BaseTestCase(IsolatedAsyncioTestCase):
             await self.redis.connection_pool.disconnect()
 
         self.addAsyncCleanup(cleanup)
+
+    async def login_user(self, email: str, password: str):
+        response = await self.client.post(
+            "/api/auth/login", json={"email": email, "password": password}
+        )
+        self.assertEqual(response.status_code, status_codes.HTTP_200_OK)
 
     async def create_user(
         self,

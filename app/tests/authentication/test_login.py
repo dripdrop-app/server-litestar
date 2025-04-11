@@ -32,6 +32,19 @@ class LoginTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, status_codes.HTTP_401_UNAUTHORIZED)
 
+    async def test_login_with_unverified_user(self):
+        """
+        Test logging in with a user that is not verified. The endpoint should return a
+        401 status.
+        """
+
+        password = self.faker.password()
+        user = await self.create_user(password=password, verified=False)
+        response = await self.client.post(
+            self.url, json={"email": user.email, "password": password}
+        )
+        self.assertEqual(response.status_code, status_codes.HTTP_401_UNAUTHORIZED)
+
     async def test_login_with_correct_credentials(self):
         """
         Test logging in with correct credentials. The endpoint should return a 200 status
@@ -44,3 +57,4 @@ class LoginTestCase(BaseTestCase):
             self.url, json={"email": user.email, "password": password}
         )
         self.assertEqual(response.status_code, status_codes.HTTP_200_OK)
+        self.assertIsNotNone(self.client.cookies.get("session"))

@@ -47,3 +47,8 @@ class AuthenticationController(Controller):
             raise NotAuthorizedException(detail="Account is not verified.")
         request.set_session({"user_id": existing_user.id})
         return {"detail": "Success."}
+
+    @get("/logout", status_code=status_codes.HTTP_200_OK)
+    async def logout(self, request: Request) -> dict:
+        request.clear_session()
+        return {"detail": "Success."}

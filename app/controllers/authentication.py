@@ -1,19 +1,27 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 import bcrypt
-from litestar import Controller, Request, post, status_codes
+from litestar import Controller, Request, get, post, status_codes
+from litestar.di import Provide
 from litestar.exceptions import (
     NotAuthorizedException,
     NotFoundException,
 )
 from litestar.params import Body
 
-from app.db.models.users import User, UserRespository
-from app.models.authentication import LoginUser
+from app.db.models.users import User, UserRespository, provide_users_repo
+from app.models.authentication import LoginUser, SessionUser
 
 
 class AuthenticationController(Controller):
     path = "auth"
+
+    dependencies = {"users_repo": Provide(provide_users_repo)}
+
+    @get("/session", status_code=status_codes.HTTP_200_OK)
+    async def get_session(self, request: Request[User, Any, Any]) -> SessionUser:
+        user = request.user
+        return SessionUser(email=user.email, admin=user.admin)
 
     @post(
         "/login",

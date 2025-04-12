@@ -26,6 +26,7 @@ session_auth = SessionAuth[User, ServerSideSessionBackend](
     session_backend_config=ServerSideSessionConfig(),
     exclude=[
         "/auth/login",
+        "/auth/create",
         "/auth/signup",
         "/auth/verify",
         "/auth/sendreset",

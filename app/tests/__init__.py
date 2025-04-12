@@ -1,14 +1,18 @@
+from typing import Callable
 from unittest import IsolatedAsyncioTestCase
 
 from faker import Faker
 from litestar import status_codes
 from litestar.testing import AsyncTestClient
 from redis.asyncio.client import Redis
+from saq import Queue
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app import app
 from app.db import sqlalchemy_config
 from app.db.models.users import User, provide_users_repo
+from app.queue import _is_registered_task, shutdown, startup
+from app.queue.context import SAQContext
 from app.services import temp_files
 from app.settings import ENV, settings
 
@@ -74,3 +78,16 @@ class BaseTestCase(IsolatedAsyncioTestCase):
             ),
             auto_commit=True,
         )
+
+
+async def test_enqueue_task(
+    queue: Queue, func: Callable, retries: int = 3, retry_backoff: bool = True, **kwargs
+):
+    if not _is_registered_task(func=func):
+        raise Exception(f"{func.__qualname__} is not a registered task.")
+
+    context = SAQContext()
+    await startup(context)
+    await func(context, **kwargs)
+    await shutdown(context)
+    return

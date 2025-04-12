@@ -401,6 +401,7 @@ dependencies = [
     { name = "mutagen" },
     { name = "pre-commit" },
     { name = "pydantic-settings" },
+    { name = "saq", extra = ["redis"] },
     { name = "smtp2go" },
     { name = "yt-dlp" },
 ]
@@ -422,6 +423,7 @@ requires-dist = [
     { name = "mutagen", specifier = ">=1.47.0" },
     { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "pydantic-settings", specifier = ">=2.8.1" },
+    { name = "saq", extras = ["redis"], specifier = ">=0.22.6" },
     { name = "smtp2go", specifier = ">=2.3.1" },
     { name = "yt-dlp", specifier = ">=2025.3.31" },
 ]
@@ -1330,6 +1332,11 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/73/3c/9a8f20a5c99b10bf6438fe34d1ada27bac6f20b5d0658f4d54ffae2c8fcf/saq-0.22.6.tar.gz", hash = "sha256:cb4f979c8965fff36c57875ce92c35a5417bd25e77433f1d3edb10fd237bb936", size = 57814 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/20/02/ad470a96d4949b5cb9b9cad8de01c31ef3191567f7095162bd5f49c00feb/saq-0.22.6-py3-none-any.whl", hash = "sha256:65f0c098356d96d1fbc89bc40bee74c3e65de5bedfdf7916063847f35343839b", size = 60899 },
+]
+
+[package.optional-dependencies]
+redis = [
+    { name = "redis" },
 ]
 
 [[package]]

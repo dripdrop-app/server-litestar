@@ -15,6 +15,7 @@ dependencies = [
     "mutagen>=1.47.0",
     "pre-commit>=4.2.0",
     "pydantic-settings>=2.8.1",
+    "saq[redis]>=0.22.6",
     "smtp2go>=2.3.1",
     "yt-dlp>=2025.3.31",
 ]

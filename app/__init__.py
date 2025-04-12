@@ -1,12 +1,8 @@
-from pathlib import Path
-
 from litestar import Litestar, Router
-from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.di import Provide
 from litestar.plugins.htmx import HTMXPlugin
 from litestar.plugins.sqlalchemy import SQLAlchemyPlugin
 from litestar.stores.redis import RedisStore
-from litestar.template.config import TemplateConfig
 from litestar_saq import SAQPlugin
 
 from app.controllers import AuthenticationController
@@ -15,12 +11,10 @@ from app.dependencies import provide_redis
 from app.queue import saq_config
 from app.session import session_auth
 from app.settings import ENV, settings
+from app.templates import template_config
 
 api_router = Router(path="/api", route_handlers=[AuthenticationController])
 
-template_config = TemplateConfig(
-    directory=Path("app/templates"), engine=JinjaTemplateEngine
-)
 
 app = Litestar(
     debug=settings.env != ENV.PRODUCTION,

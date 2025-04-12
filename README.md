@@ -1,8 +1,9 @@
 ## Requirements
 
-- [uv](https://docs.astral.sh/uv/)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - make
-- [docker](https://www.docker.com/)
+- [docker](https://docs.docker.com/engine/install/)
+- [infisical](https://infisical.com/docs/cli/overview)
 
 ## Setup
 
@@ -20,10 +21,16 @@ Deploy services with docker using this command:
 make deploy-local
 ```
 
-To run the server run this command
+To run the development server run this command
 
 ```bash
-make run
+make run-dev
+```
+
+To run the development worker run this command
+
+```bash
+make worker-dev
 ```
 
 ## Test

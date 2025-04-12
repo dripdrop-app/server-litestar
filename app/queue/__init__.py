@@ -15,9 +15,13 @@ async def shutdown(ctx: SAQContext):
 
 
 saq_config = SAQConfig(
-    dsn=settings.redis_url,
     queue_configs=[
-        QueueConfig(tasks=[*email.tasks], startup=startup, shutdown=shutdown)
+        QueueConfig(
+            dsn=settings.redis_url,
+            tasks=[*email.tasks],
+            startup=startup,
+            shutdown=shutdown,
+        )
     ],
     web_enabled=True,
 )

@@ -2,11 +2,11 @@ import asyncio
 import uuid
 from urllib.parse import urlencode, urlunsplit
 
-from app import template_config
 from app.clients import smtp2go
 from app.dependencies import provide_redis
 from app.queue.context import SAQContext
 from app.settings import ENV, settings
+from app.templates import template_config
 
 
 async def send_verification_email(ctx: SAQContext, email: str, base_url: str):

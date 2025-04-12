@@ -9,9 +9,12 @@ from litestar.exceptions import (
     NotFoundException,
 )
 from litestar.params import Body
+from litestar_saq.config import TaskQueues
 
 from app.db.models.users import User, UserRespository, provide_users_repo
 from app.models.authentication import CreateUser, LoginUser, SessionUser
+from app.queue import enqueue_task
+from app.queue.email import send_verification_email
 
 
 class AuthenticationController(Controller):
@@ -59,10 +62,17 @@ class AuthenticationController(Controller):
         self,
         data: Annotated[CreateUser, Body()],
         users_repo: UserRespository,
+        task_queues: TaskQueues,
         request: Request,
     ) -> dict:
         existing_user = await users_repo.get_one_or_none(User.email == data.email)
         if existing_user:
             raise ClientException(detail="User with this email exists.")
         await users_repo.add(User(email=data.email, password=data.password))
+        await enqueue_task(
+            queue=task_queues.get("default"),
+            func=send_verification_email,
+            email=data.email,
+            base_url=request.headers.get("Host", request.base_url),
+        )
         return {"detail": "Success."}

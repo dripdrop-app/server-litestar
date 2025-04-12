@@ -1,6 +1,7 @@
 from typing import Callable
 
 from litestar_saq import QueueConfig, SAQConfig
+from redis.asyncio import Redis
 from saq import Job, Queue
 
 from app.db import sqlalchemy_config
@@ -11,10 +12,12 @@ from app.settings import settings
 
 async def startup(ctx: SAQContext):
     ctx["db_engine"] = sqlalchemy_config.get_engine()
+    ctx["redis"] = Redis.from_url(settings.redis_url)
 
 
 async def shutdown(ctx: SAQContext):
     await ctx["db_engine"].dispose()
+    await ctx["redis"].aclose()
 
 
 saq_config = SAQConfig(

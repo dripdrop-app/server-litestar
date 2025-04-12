@@ -1,6 +1,6 @@
 .PHONY: makemigration
 makemigration:
-	litestar database make-migration --auto-generate
+	infisical run --env=dev -- uv run litestar database make-migration --auto-generate
 
 .PHONY: install
 install:
@@ -12,7 +12,7 @@ lint:
 
 .PHONY: test
 test:
-	ENV=testing python -m unittest discover
+	ENV=testing infisical run --env=dev -- uv run python -m unittest discover
 
 .PHONY: deploy-local
 deploy-local:
@@ -20,8 +20,12 @@ deploy-local:
 
 .PHONY: run
 run:
-	litestar run
+	infisical run --env=dev -- uv run litestar run
 
 .PHONY: clean
 clean:
 	rm -rf $(shell find app -name __pycache__)
+
+.PHONY: commit
+commit:
+	uv run cz commit

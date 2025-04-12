@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 from litestar import status_codes
 
+from app.db.models.users import User, UserRespository
 from app.tests import BaseTestCase, test_enqueue_task
 
 
@@ -40,3 +41,8 @@ class CreateTestCase(BaseTestCase):
         self.assertEqual(kwargs["sender"], "app@dripdrop.pro")
         self.assertEqual(kwargs["recipient"], email)
         self.assertEqual(kwargs["subject"], "Verification")
+        users_repo = UserRespository(session=self.db_session)
+        user = await users_repo.get_one_or_none(User.email == email)
+        self.assertIsNotNone(user)
+        self.assertEqual(user.email, email)
+        self.assertFalse(user.verified)

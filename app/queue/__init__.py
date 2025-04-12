@@ -30,16 +30,25 @@ saq_config = SAQConfig(
 )
 
 
+def _is_registered_task(func: Callable):
+    return [
+        queue_config
+        for queue_config in saq_config.queue_configs
+        if func.__qualname__ in [task.__qualname__ for task in queue_config.tasks]
+    ]
+
+
 async def enqueue_task(
     queue: Queue, func: Callable, retries: int = 3, retry_backoff: bool = True, **kwargs
 ):
-    matching_queues = [
-        queue_config
-        for queue_config in saq_config.queue_configs
-        if func.__name__ in [task.__name__ for task in queue_config.tasks]
-    ]
-    if not matching_queues:
-        raise Exception(f"{func.__name__} is not a registered task.")
+    if not _is_registered_task(func=func):
+        raise Exception(f"{func.__qualname__} is not a registered task.")
+
     return await queue.enqueue(
-        Job(func.__name__, kwargs=kwargs, retries=retries, retry_backoff=retry_backoff)
+        Job(
+            func.__qualname__,
+            kwargs=kwargs,
+            retries=retries,
+            retry_backoff=retry_backoff,
+        )
     )

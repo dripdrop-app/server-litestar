@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     redis_url: str
     secret_key: str
     sendgrid_api_key: str
+    smtp2go_api_key: str
     test_async_database_url: str
     test_aws_s3_bucket: str
     test_redis_url: str

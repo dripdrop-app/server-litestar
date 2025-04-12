@@ -11,7 +11,6 @@ from litestar.exceptions import (
 from litestar.params import Body
 
 from app.db.models.users import User, UserRespository, provide_users_repo
-from app.listeners import LISTENER
 from app.models.authentication import CreateUser, LoginUser, SessionUser
 
 
@@ -61,10 +60,9 @@ class AuthenticationController(Controller):
         data: Annotated[CreateUser, Body()],
         users_repo: UserRespository,
         request: Request,
-    ):
+    ) -> dict:
         existing_user = await users_repo.get_one_or_none(User.email == data.email)
         if existing_user:
             raise ClientException(detail="User with this email exists.")
         await users_repo.add(User(email=data.email, password=data.password))
-        request.app.emit(LISTENER.USER_CREATED)
         return {"detail": "Success."}

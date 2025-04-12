@@ -18,14 +18,14 @@ test:
 deploy-local:
 	docker compose --profile dev up -d 
 
-.PHONY: run
-run:
+.PHONY: run-dev
+run-dev:
 	infisical run --env=dev -- uv run litestar run
+
+.PHONY: worker-dev
+worker-dev:
+	infisical run --env=dev -- uv run litestar workers run
 
 .PHONY: clean
 clean:
 	rm -rf $(shell find app -name __pycache__)
-
-.PHONY: commit
-commit:
-	uv run cz commit

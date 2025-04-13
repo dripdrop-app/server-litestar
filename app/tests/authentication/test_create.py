@@ -18,6 +18,10 @@ async def test_create_when_user_exists(client, faker, create_user):
         URL, json={"email": user.email, "password": faker.password()}
     )
     assert response.status_code == status_codes.HTTP_400_BAD_REQUEST
+    assert response.json() == {
+        "detail": "User with this email exists.",
+        "status_code": status_codes.HTTP_400_BAD_REQUEST,
+    }
 
 
 async def test_create(client, faker, db_session, mock_enqueue_task, monkeypatch):

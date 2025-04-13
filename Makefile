@@ -12,7 +12,7 @@ lint:
 
 .PHONY: test
 test:
-	ENV=testing infisical run --env=dev -- uv run python -m unittest discover
+	ENV=testing infisical run --env=dev -- uv run pytest -vv
 
 .PHONY: deploy-local
 deploy-local:

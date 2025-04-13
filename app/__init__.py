@@ -18,7 +18,7 @@ api_router = Router(path="/api", route_handlers=[AuthenticationController])
 
 app = Litestar(
     debug=settings.env != ENV.PRODUCTION,
-    dependencies={"redis": Provide(provide_redis, sync_to_thread=False)},
+    dependencies={"redis": Provide(provide_redis)},
     on_app_init=[session_auth.on_app_init],
     plugins=[
         HTMXPlugin(),

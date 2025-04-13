@@ -9,6 +9,7 @@ from litestar.exceptions import (
     NotFoundException,
 )
 from litestar.params import Body
+from litestar.response import Redirect
 from litestar_saq.config import TaskQueues
 from redis.asyncio import Redis
 
@@ -40,11 +41,10 @@ class AuthenticationController(Controller):
         request: Request,
     ) -> dict:
         if existing_user := await users_repo.get_one_or_none(User.email == data.email):
-            password_verified = bcrypt.checkpw(
+            if not bcrypt.checkpw(
                 bytes(data.password, encoding="utf-8"),
                 bytes(existing_user.password, encoding="utf-8"),
-            )
-            if not password_verified:
+            ):
                 raise NotAuthorizedException(detail="Incorrect Credentials.")
             if not existing_user.verified:
                 raise NotAuthorizedException(detail="Account is not verified.")
@@ -75,3 +75,17 @@ class AuthenticationController(Controller):
             base_url=request.headers.get("Host", request.base_url),
         )
         return {"detail": "Success."}
+
+    @get("/verify", raises=[ClientException])
+    async def verify_email(
+        self, token: str, users_repo: UserRespository, redis: Redis
+    ) -> Redirect:
+        redis_key = f"verify:{token}"
+        if email := await redis.get(redis_key):
+            if user := await users_repo.get_one_or_none(User.email == email.decode()):
+                user.verified = True
+                await users_repo.update(user)
+                await redis.delete(redis_key)
+                return Redirect(path="/account")
+            raise ClientException(detail="Account does not exist.")
+        raise ClientException(detail="Token is not valid.")

@@ -2,7 +2,7 @@ import asyncio
 import uuid
 from urllib.parse import urlencode, urlunsplit
 
-from app.clients import smtp2go
+from app.clients.smtp2go import send_email
 from app.queue.context import SAQContext
 from app.settings import ENV, settings
 from app.templates import template_config
@@ -25,7 +25,7 @@ async def send_verification_email(ctx: SAQContext, email: str, base_url: str):
     verify_template = template_engine.get_template("email/verify.jinja")
     html = await verify_template.render_async(link=verify_url)
     await asyncio.to_thread(
-        smtp2go.send_email,
+        send_email,
         sender="app@dripdrop.pro",
         recipient=email,
         subject="Verification",

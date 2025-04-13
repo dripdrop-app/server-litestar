@@ -14,9 +14,14 @@ from litestar_saq.config import TaskQueues
 from redis.asyncio import Redis
 
 from app.db.models.users import User, UserRespository, provide_users_repo
-from app.models.authentication import CreateUser, LoginUser, SessionUser
+from app.models.authentication import (
+    CreateUser,
+    LoginUser,
+    ResetPasswordUser,
+    SessionUser,
+)
 from app.queue import enqueue_task
-from app.queue.email import send_verification_email
+from app.queue.email import send_password_reset_email, send_verification_email
 
 
 class AuthenticationController(Controller):
@@ -76,7 +81,7 @@ class AuthenticationController(Controller):
         )
         return {"detail": "Success."}
 
-    @get("/verify", raises=[ClientException])
+    @get("/verify", status_code=status_codes.HTTP_200_OK, raises=[ClientException])
     async def verify_email(
         self, token: str, users_repo: UserRespository, redis: Redis
     ) -> Redirect:
@@ -89,3 +94,25 @@ class AuthenticationController(Controller):
                 return Redirect(path="/account")
             raise ClientException(detail="Account does not exist.")
         raise ClientException(detail="Token is not valid.")
+
+    @post(
+        "/sendreset",
+        status_code=status_codes.HTTP_200_OK,
+        raises=[ClientException],
+    )
+    async def send_reset_email(
+        self,
+        data: Annotated[ResetPasswordUser, Body()],
+        users_repo: UserRespository,
+        task_queues: TaskQueues,
+    ) -> dict:
+        if user := await users_repo.get_one_or_none(User.email == data.email):
+            if not user.verified:
+                raise ClientException(detail="Account is not verified.")
+            await enqueue_task(
+                queue=task_queues.get("default"),
+                func=send_password_reset_email,
+                email=data.email,
+            )
+            return {"detail": "Success."}
+        raise ClientException(detail="Account does not exist.")

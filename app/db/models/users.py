@@ -13,6 +13,18 @@ class User(base.UUIDAuditBase):
     admin: Mapped[bool] = mapped_column(nullable=False, default=False)
     verified: Mapped[bool] = mapped_column(nullable=False, default=False)
 
+    def set_password(self, new_password: str):
+        self.password = str(
+            bcrypt.hashpw(bytes(new_password, encoding="utf-8"), bcrypt.gensalt()),
+            encoding="utf-8",
+        )
+
+    def check_password(self, password: str):
+        return bcrypt.checkpw(
+            bytes(password, encoding="utf-8"),
+            bytes(self.password, encoding="utf-8"),
+        )
+
 
 class UserRespository(repository.SQLAlchemyAsyncRepository[User]):
     model_type = User

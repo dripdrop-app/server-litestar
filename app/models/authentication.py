@@ -16,5 +16,10 @@ class CreateUser(BaseModel):
     password: str = Field(..., min_length=8)
 
 
-class ResetPasswordUser(BaseModel):
+class SendResetPassword(BaseModel):
     email: EmailStr
+
+
+class PasswordReset(BaseModel):
+    token: str
+    password: str = Field(..., min_length=8)

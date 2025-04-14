@@ -1,6 +1,5 @@
 from typing import Annotated, Any
 
-import bcrypt
 from litestar import Controller, Request, get, post, status_codes
 from litestar.di import Provide
 from litestar.exceptions import (
@@ -17,7 +16,8 @@ from app.db.models.users import User, UserRespository, provide_users_repo
 from app.models.authentication import (
     CreateUser,
     LoginUser,
-    ResetPasswordUser,
+    PasswordReset,
+    SendResetPassword,
     SessionUser,
 )
 from app.queue import enqueue_task
@@ -46,10 +46,7 @@ class AuthenticationController(Controller):
         request: Request,
     ) -> dict:
         if existing_user := await users_repo.get_one_or_none(User.email == data.email):
-            if not bcrypt.checkpw(
-                bytes(data.password, encoding="utf-8"),
-                bytes(existing_user.password, encoding="utf-8"),
-            ):
+            if not existing_user.check_password(data.password):
                 raise NotAuthorizedException(detail="Incorrect Credentials.")
             if not existing_user.verified:
                 raise NotAuthorizedException(detail="Account is not verified.")
@@ -102,7 +99,7 @@ class AuthenticationController(Controller):
     )
     async def send_reset_email(
         self,
-        data: Annotated[ResetPasswordUser, Body()],
+        data: Annotated[SendResetPassword, Body()],
         users_repo: UserRespository,
         task_queues: TaskQueues,
     ) -> dict:
@@ -116,3 +113,20 @@ class AuthenticationController(Controller):
             )
             return {"detail": "Success."}
         raise ClientException(detail="Account does not exist.")
+
+    @post("/reset", status_code=status_codes.HTTP_200_OK, raises=[ClientException])
+    async def reset_password(
+        self,
+        data: Annotated[PasswordReset, Body()],
+        users_repo: UserRespository,
+        redis: Redis,
+    ) -> dict:
+        redis_key = f"reset:{data.token}"
+        if email := await redis.get(redis_key):
+            if user := await users_repo.get_one_or_none(User.email == email.decode()):
+                user.set_password(data.password)
+                await users_repo.update(user)
+                await redis.delete(redis_key)
+                return {"detail": "Success."}
+            raise ClientException(detail="Account does not exist.")
+        raise ClientException(detail="Token is not valid.")

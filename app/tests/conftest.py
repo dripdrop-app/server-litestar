@@ -112,6 +112,4 @@ async def mock_enqueue_task(monkeypatch: pytest.MonkeyPatch):
         await shutdown(context)
         return
 
-    monkeypatch.setattr(
-        "app.controllers.authentication.enqueue_task", test_enqueue_task
-    )
+    monkeypatch.setattr("app.routes.authentication.enqueue_task", test_enqueue_task)

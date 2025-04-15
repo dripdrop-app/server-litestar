@@ -5,15 +5,15 @@ from litestar.plugins.sqlalchemy import SQLAlchemyPlugin
 from litestar.stores.redis import RedisStore
 from litestar_saq import SAQPlugin
 
-from app.controllers import AuthenticationController
 from app.db import sqlalchemy_config
 from app.dependencies import provide_redis
 from app.queue import saq_config
+from app.routes.authentication import auth_router
 from app.session import session_auth
 from app.settings import ENV, settings
 from app.templates import template_config
 
-api_router = Router(path="/api", route_handlers=[AuthenticationController])
+api_router = Router(path="/api", route_handlers=[auth_router])
 
 
 app = Litestar(

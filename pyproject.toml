@@ -8,6 +8,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "bcrypt>=4.3.0",
     "boto3>=1.37.34",
+    "bs4>=0.0.2",
     "commitizen>=4.5.1",
     "fake-useragent>=2.2.0",
     "faker>=37.1.0",

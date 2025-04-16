@@ -129,7 +129,7 @@ async def reset_password(
     raise ClientException(detail="Token is not valid.")
 
 
-auth_router = Router(
+router = Router(
     path="/auth",
     dependencies={"users_repo": Provide(provide_users_repo)},
     route_handlers=[

@@ -28,7 +28,7 @@ async def get_grouping(video_url: str) -> GroupingResponse:
         raise ClientException(detail="Unable to get grouping.")
 
 
-@get("/artwork", status_code=status_codes.HTTP_200_OK)
+@get("/artwork", status_code=status_codes.HTTP_200_OK, raises=[ClientException])
 async def get_artwork(artwork_url: str) -> ResolvedArtworkResponse:
     try:
         resolved_artwork_url = await image_downloader.resolve_artwork(

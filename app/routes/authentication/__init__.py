@@ -141,4 +141,5 @@ router = Router(
         send_reset_email,
         reset_password,
     ],
+    tags=["Authentication"],
 )

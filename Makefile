@@ -20,11 +20,11 @@ deploy-local:
 
 .PHONY: run-dev
 run-dev:
-	infisical run --env=dev -- uv run litestar run
+	infisical run --env=dev -- uv run litestar run --debug --reload
 
 .PHONY: worker-dev
 worker-dev:
-	infisical run --env=dev -- uv run litestar workers run
+	infisical run --env=dev -- uv run litestar workers run --reload --debug
 
 .PHONY: clean
 clean:

@@ -1,6 +1,7 @@
 from litestar import Litestar, Router
 from litestar.di import Provide
 from litestar.plugins.htmx import HTMXPlugin
+from litestar.plugins.pydantic import PydanticPlugin
 from litestar.plugins.sqlalchemy import SQLAlchemyPlugin
 from litestar.stores.redis import RedisStore
 from litestar_saq import SAQPlugin
@@ -22,6 +23,7 @@ app = Litestar(
     on_app_init=[session_auth.on_app_init],
     plugins=[
         HTMXPlugin(),
+        PydanticPlugin(prefer_alias=True),
         SQLAlchemyPlugin(config=sqlalchemy_config),
         SAQPlugin(config=saq_config),
     ],

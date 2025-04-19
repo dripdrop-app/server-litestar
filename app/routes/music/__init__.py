@@ -49,9 +49,11 @@ async def get_artwork(artwork_url: str) -> ResolvedArtworkResponse:
 
 @post("/tags", status_code=status_codes.HTTP_200_OK, raises=[ClientException])
 async def get_tags(
-    file: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
+    data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
 ) -> TagsResponse:
-    return await audiotags.read_tags(file=await file.read(), filename=file.filename)
+    return await audiotags.AudioTags.read_tags(
+        file=await data.read(), filename=data.filename
+    )
 
 
 router = Router(

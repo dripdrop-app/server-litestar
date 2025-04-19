@@ -1,17 +1,38 @@
+from pathlib import Path
 from typing import Callable
 
 from litestar_saq import QueueConfig, SAQConfig
 from redis.asyncio import Redis
 from saq import Job, Queue
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.db import sqlalchemy_config
-from app.queue import email
 from app.queue.context import SAQContext
 from app.settings import settings
 
 
+def get_tasks():
+    tasks = []
+    on_fail_tasks = {}
+    for _, _, filenames in Path(__file__).parent.walk(top_down=False):
+        for filename in filenames:
+            if filename.endswith(".py") and filename not in [
+                "__init__.py",
+                "context.py",
+            ]:
+                module_name = Path(filename).stem
+                module_tasks = __import__(f"app.queue.{module_name}")
+                tasks.extend(getattr(module_tasks, "tasks", []))
+                on_fail_tasks.update(getattr(module_tasks, "on_fail_tasks", {}))
+    return tasks, on_fail_tasks
+
+
+tasks, on_fail_tasks = get_tasks()
+
+
 async def startup(ctx: SAQContext):
     ctx["db_engine"] = sqlalchemy_config.get_engine()
+    ctx["db_sessionmaker"] = async_sessionmaker(ctx["db_engine"])
     ctx["redis"] = Redis.from_url(settings.redis_url)
 
 
@@ -20,13 +41,21 @@ async def shutdown(ctx: SAQContext):
     await ctx["redis"].aclose()
 
 
+async def after_process(ctx: SAQContext):
+    job = ctx["job"]
+    if job.attempts == job.retries:
+        on_fail_task = on_fail_tasks.get(job.function)
+        on_fail_task(ctx)
+
+
 saq_config = SAQConfig(
     queue_configs=[
         QueueConfig(
             dsn=settings.redis_url,
-            tasks=[*email.tasks],
+            tasks=tasks,
             startup=startup,
             shutdown=shutdown,
+            after_process=after_process,
         )
     ],
     web_enabled=True,

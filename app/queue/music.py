@@ -13,7 +13,7 @@ from app.models.music import MusicJobUpdateResponse
 from app.queue.context import SAQContext
 from app.services import tempfiles
 from app.settings import settings
-from app.utils import parse_youtube_video_id
+from app.utils.youtube import parse_youtube_video_id
 
 JOB_DIR = "music_jobs"
 

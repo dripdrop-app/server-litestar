@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Callable
 
 from litestar_saq import QueueConfig, SAQConfig
@@ -7,27 +6,12 @@ from saq import Job, Queue
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.db import sqlalchemy_config
+from app.queue import email, music
 from app.queue.context import SAQContext
 from app.settings import settings
 
-
-def get_tasks():
-    tasks = []
-    on_fail_tasks = {}
-    for _, _, filenames in Path(__file__).parent.walk(top_down=False):
-        for filename in filenames:
-            if filename.endswith(".py") and filename not in [
-                "__init__.py",
-                "context.py",
-            ]:
-                module_name = Path(filename).stem
-                module_tasks = __import__(f"app.queue.{module_name}")
-                tasks.extend(getattr(module_tasks, "tasks", []))
-                on_fail_tasks.update(getattr(module_tasks, "on_fail_tasks", {}))
-    return tasks, on_fail_tasks
-
-
-tasks, on_fail_tasks = get_tasks()
+tasks = [*email.tasks, *music.tasks]
+on_fail_tasks = {**music.on_fail_tasks}
 
 
 async def startup(ctx: SAQContext):

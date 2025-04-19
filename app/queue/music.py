@@ -6,7 +6,7 @@ import aiofiles
 import httpx
 from yt_dlp.utils import sanitize_filename
 
-from app.channels import Channels
+from app.channels import MUSIC_JOB_UPDATE
 from app.clients import audiotags, ffmpeg, imagedownloader, invidious, s3, ytdlp
 from app.db.models.musicjob import MusicJob, MusicJobRespository
 from app.models.music import MusicJobUpdateResponse
@@ -75,7 +75,7 @@ async def run_music_job(ctx: SAQContext, music_job_id: str):
         music_jobs_repo = MusicJobRespository(session=session)
         music_job = await music_jobs_repo.get_one(MusicJob.id == music_job_id)
         await redis.publish(
-            Channels.MUSIC_JOB_UPDATE,
+            MUSIC_JOB_UPDATE,
             json.dumps(
                 MusicJobUpdateResponse(id=music_job_id, status="STARTED").model_dump()
             ),
@@ -109,7 +109,7 @@ async def run_music_job(ctx: SAQContext, music_job_id: str):
             )
 
         await redis.publish(
-            Channels.MUSIC_JOB_UPDATE,
+            MUSIC_JOB_UPDATE,
             json.dumps(
                 MusicJobUpdateResponse(id=music_job_id, status="COMPLETED").model_dump()
             ),

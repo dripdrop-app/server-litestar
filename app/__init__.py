@@ -5,7 +5,7 @@ from litestar.plugins import htmx, pydantic, sqlalchemy
 from litestar.stores.redis import RedisStore
 from litestar_saq import SAQPlugin
 
-from app.channels import Channels, channels_backend
+from app.channels import MUSIC_JOB_UPDATE, YOUTUBE_CHANNEL_UPDATE, channels_backend
 from app.db import sqlalchemy_config
 from app.dependencies import provide_redis
 from app.queue import saq_config
@@ -24,7 +24,7 @@ app = Litestar(
     plugins=[
         ChannelsPlugin(
             backend=channels_backend,
-            channels=[Channels.MUSIC_JOB_UPDATE, Channels.YOUTUBE_CHANNEL_UPDATE],
+            channels=[MUSIC_JOB_UPDATE, YOUTUBE_CHANNEL_UPDATE],
         ),
         htmx.HTMXPlugin(),
         pydantic.PydanticPlugin(prefer_alias=True),

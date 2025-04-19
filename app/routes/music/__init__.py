@@ -1,14 +1,18 @@
 import logging
 import traceback
+from typing import Annotated
 
-from litestar import Router, get, status_codes
+from litestar import Router, get, post, status_codes
+from litestar.datastructures import UploadFile
+from litestar.enums import RequestEncodingType
 from litestar.exceptions import (
     ClientException,
 )
+from litestar.params import Body
 
-from app.clients import google, imagedownloader, ytdlp
-from app.models.music import GroupingResponse, ResolvedArtworkResponse
-from app.utils import parse_youtube_video_id
+from app.clients import audiotags, google, imagedownloader, ytdlp
+from app.models.music import GroupingResponse, ResolvedArtworkResponse, TagsResponse
+from app.utils.youtube import parse_youtube_video_id
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +47,13 @@ async def get_artwork(artwork_url: str) -> ResolvedArtworkResponse:
         )
 
 
+@post("/tags", status_code=status_codes.HTTP_200_OK, raises=[ClientException])
+async def get_tags(
+    file: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
+) -> TagsResponse:
+    return await audiotags.read_tags(file=await file.read(), filename=file.filename)
+
+
 router = Router(
-    path="/music", route_handlers=[get_grouping, get_artwork], tags=["Music"]
+    path="/music", route_handlers=[get_grouping, get_artwork, get_tags], tags=["Music"]
 )

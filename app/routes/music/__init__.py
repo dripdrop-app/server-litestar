@@ -6,7 +6,7 @@ from litestar.exceptions import (
     ClientException,
 )
 
-from app.clients import google, image_downloader, ytdlp
+from app.clients import google, imagedownloader, ytdlp
 from app.models.music import GroupingResponse, ResolvedArtworkResponse
 from app.utils import parse_youtube_video_id
 
@@ -31,7 +31,7 @@ async def get_grouping(video_url: str) -> GroupingResponse:
 @get("/artwork", status_code=status_codes.HTTP_200_OK, raises=[ClientException])
 async def get_artwork(artwork_url: str) -> ResolvedArtworkResponse:
     try:
-        resolved_artwork_url = await image_downloader.resolve_artwork(
+        resolved_artwork_url = await imagedownloader.resolve_artwork(
             artwork=artwork_url
         )
         return ResolvedArtworkResponse(resolved_artwork_url=resolved_artwork_url)

@@ -94,6 +94,27 @@ async def login_user(client: AsyncTestClient):
     return _run
 
 
+@pytest.fixture(scope="function")
+async def create_and_login_user(faker, create_user, login_user):
+    async def _run(
+        email: str = None,
+        password: str = None,
+        admin: bool = False,
+        verified: bool = True,
+    ):
+        password = password or faker.password()
+        user: User = await create_user(
+            email=email,
+            password=password,
+            admin=admin,
+            verified=verified,
+        )
+        await login_user(email=user.email, password=password)
+        return user
+
+    return _run
+
+
 @pytest.fixture(scope="function", autouse=True)
 async def mock_enqueue_task(monkeypatch: pytest.MonkeyPatch):
     async def test_enqueue_task(

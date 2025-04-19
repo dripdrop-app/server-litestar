@@ -13,7 +13,7 @@ from app.db import sqlalchemy_config
 from app.db.models.users import User, provide_users_repo
 from app.queue import _is_registered_task, shutdown, startup
 from app.queue.context import SAQContext
-from app.services import temp_files
+from app.services import tempfiles
 from app.settings import ENV, settings
 
 
@@ -30,9 +30,9 @@ async def env():
 
 @pytest.fixture(scope="function", autouse=True)
 async def init_temp():
-    await temp_files.create_temp_directory()
+    await tempfiles.create_temp_directory()
     yield
-    await temp_files.cleanup_temp_directory()
+    await tempfiles.cleanup_temp_directory()
 
 
 @pytest.fixture(scope="function", autouse=True)

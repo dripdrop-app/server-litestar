@@ -1,4 +1,5 @@
 import asyncio
+from urllib.parse import urljoin
 
 import boto3
 
@@ -6,7 +7,7 @@ from app.settings import settings
 
 
 def resolve_url(filename: str):
-    return f"{settings.aws_endpoint_url}/{settings.aws_s3_bucket}/{filename}"
+    return urljoin(settings.aws_endpoint_url, filename)
 
 
 _client = boto3.client(

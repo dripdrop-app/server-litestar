@@ -12,7 +12,11 @@ lint:
 
 .PHONY: test
 test:
-	ENV=testing infisical run --env=dev -- uv run pytest 
+	ENV=testing infisical run --env=dev -- uv run pytest
+
+.PHONY: cov
+coverage:
+	ENV=testing infisical run --env=dev -- uv run pytest --cov=app
 
 .PHONY: deploy-local
 deploy-local:

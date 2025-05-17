@@ -1,6 +1,7 @@
 from typing import Annotated, Any
 
-from litestar import Request, Router, get, post, status_codes
+from litestar import Request, Response, Router, get, post, status_codes
+from litestar.background_tasks import BackgroundTask
 from litestar.di import Provide
 from litestar.exceptions import (
     ClientException,
@@ -66,13 +67,17 @@ async def create_account(
     if await users_repo.get_one_or_none(User.email == data.email):
         raise ClientException(detail="User with this email exists.")
     await users_repo.add(User(email=data.email, password=data.password))
-    await enqueue_task(
-        queue=task_queues.get("default"),
-        func=send_verification_email,
-        email=data.email,
-        base_url=request.headers.get("Host", request.base_url),
+    return Response(
+        content={"detail": "Success."},
+        status_code=status_codes.HTTP_200_OK,
+        background=BackgroundTask(
+            enqueue_task,
+            queue=task_queues.get("default"),
+            func=send_verification_email,
+            email=data.email,
+            base_url=request.headers.get("Host", request.base_url),
+        ),
     )
-    return {"detail": "Success."}
 
 
 @get("/verify", status_code=status_codes.HTTP_200_OK, raises=[ClientException])
@@ -103,12 +108,16 @@ async def send_reset_email(
     if user := await users_repo.get_one_or_none(User.email == data.email):
         if not user.verified:
             raise ClientException(detail="Account is not verified.")
-        await enqueue_task(
-            queue=task_queues.get("default"),
-            func=send_password_reset_email,
-            email=data.email,
+        return Response(
+            content={"detail": "Success."},
+            status_code=status_codes.HTTP_200_OK,
+            background=BackgroundTask(
+                enqueue_task,
+                queue=task_queues.get("default"),
+                func=send_password_reset_email,
+                email=data.email,
+            ),
         )
-        return {"detail": "Success."}
     raise ClientException(detail="Account does not exist.")
 
 

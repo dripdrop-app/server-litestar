@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from app.db import sqlalchemy_config
 from app.queue import email, music
 from app.queue.context import SAQContext
-from app.settings import settings
+from app.settings import ENV, settings
 
 tasks = [*email.tasks, *music.tasks]
 on_fail_tasks = {**music.on_fail_tasks}
@@ -43,6 +43,7 @@ saq_config = SAQConfig(
         )
     ],
     web_enabled=True,
+    use_server_lifespan=settings.env == ENV.TESTING,
 )
 
 

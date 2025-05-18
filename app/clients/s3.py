@@ -1,14 +1,10 @@
 import asyncio
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse, urlunparse
 
 import boto3
+from botocore.config import Config
 
 from app.settings import settings
-
-
-def resolve_url(filename: str):
-    return urljoin(settings.aws_endpoint_url, filename)
-
 
 _client = boto3.client(
     "s3",
@@ -16,7 +12,16 @@ _client = boto3.client(
     region_name=settings.aws_region_name,
     aws_access_key_id=settings.aws_access_key_id,
     aws_secret_access_key=settings.aws_secret_access_key,
+    config=Config(s3={"addressing_style": "virtual"}),
 )
+
+
+def resolve_url(filename: str):
+    url = urlparse(urljoin(settings.aws_endpoint_url, filename))
+    netloc = f"{settings.aws_s3_bucket}.{url.netloc}"
+    return urlunparse(
+        [url.scheme, netloc, url.path, url.params, url.query, url.fragment]
+    )
 
 
 async def upload_file(

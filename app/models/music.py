@@ -1,7 +1,7 @@
 from typing import Literal, Optional
 
 from litestar.datastructures import UploadFile
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from app.models import Response
 
@@ -20,11 +20,11 @@ class MusicJobUpdateResponse(Response):
 
 
 class TagsResponse(Response):
-    title: Optional[str] = Field(None)
-    artist: Optional[str] = Field(None)
-    album: Optional[str] = Field(None)
-    grouping: Optional[str] = Field(None)
-    artwork_url: Optional[str] = Field(None)
+    title: Optional[str] = None
+    artist: Optional[str] = None
+    album: Optional[str] = None
+    grouping: Optional[str] = None
+    artwork_url: Optional[str] = None
 
 
 class CreateMusicJob(BaseModel):

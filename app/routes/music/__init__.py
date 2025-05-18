@@ -14,6 +14,8 @@ from app.clients import audiotags, google, imagedownloader, ytdlp
 from app.models.music import GroupingResponse, ResolvedArtworkResponse, TagsResponse
 from app.utils.youtube import parse_youtube_video_id
 
+from .controllers import job
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,5 +59,7 @@ async def get_tags(
 
 
 router = Router(
-    path="/music", route_handlers=[get_grouping, get_artwork, get_tags], tags=["Music"]
+    path="/music",
+    route_handlers=[get_grouping, get_artwork, get_tags, job.JobController],
+    tags=["Music"],
 )

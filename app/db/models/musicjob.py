@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.clients import imagedownloader, s3
+from app.db import sqlalchemy_config
 from app.db.models.users import User
 from app.settings import settings
 
@@ -78,15 +79,14 @@ class MusicJob(base.UUIDAuditBase):
                 if response.is_success and imagedownloader.is_image_link(response):
                     self.artwork_url = artwork_url
 
-    async def upload_files(
-        self, db_session: AsyncSession, file: UploadFile, artwork_url: str | None = None
-    ):
-        if file:
-            await self._upload_audio_file(file=file)
-        if artwork_url:
-            await self._upload_artwork_url(artwork_url=artwork_url)
-        music_job_repo = MusicJobRespository(session=db_session)
-        await music_job_repo.update(self)
+    async def upload_files(self, file: UploadFile, artwork_url: str | None = None):
+        async with sqlalchemy_config.get_session() as db_session:
+            if file:
+                await self._upload_audio_file(file=file)
+            if artwork_url:
+                await self._upload_artwork_url(artwork_url=artwork_url)
+            music_job_repo = MusicJobRespository(session=db_session)
+            await music_job_repo.update(self)
 
 
 class MusicJobRespository(repository.SQLAlchemyAsyncRepository[MusicJob]):

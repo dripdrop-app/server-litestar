@@ -7,7 +7,6 @@ from litestar.di import Provide
 from litestar.enums import RequestEncodingType
 from litestar.exceptions import ClientException
 from litestar.params import Body
-from litestar_saq.config import TaskQueues
 
 from app.db.models.musicjob import (
     MusicJob,
@@ -32,7 +31,6 @@ class JobController(Controller):
             CreateMusicJob, Body(media_type=RequestEncodingType.MULTI_PART)
         ],
         music_jobs_repo: MusicJobRespository,
-        task_queues: TaskQueues,
     ) -> None:
         if data.file and data.video_url:
             raise ClientException(
@@ -74,7 +72,6 @@ class JobController(Controller):
                     ),
                     BackgroundTask(
                         enqueue_task,
-                        queue=task_queues.get("default"),
                         func="run_music_job",
                         music_job_id=str(music_job.id),
                     ),

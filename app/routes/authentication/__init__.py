@@ -71,7 +71,6 @@ async def create_account(
         status_code=status_codes.HTTP_200_OK,
         background=BackgroundTask(
             enqueue_task,
-            queue=task_queues.get("default"),
             func="send_verification_email",
             email=data.email,
             base_url=request.headers.get("Host", request.base_url),
@@ -102,7 +101,6 @@ async def verify_email(
 async def send_reset_email(
     data: Annotated[SendResetPassword, Body()],
     users_repo: UserRespository,
-    task_queues: TaskQueues,
 ) -> dict:
     if user := await users_repo.get_one_or_none(User.email == data.email):
         if not user.verified:
@@ -112,7 +110,6 @@ async def send_reset_email(
             status_code=status_codes.HTTP_200_OK,
             background=BackgroundTask(
                 enqueue_task,
-                queue=task_queues.get("default"),
                 func="send_password_reset_email",
                 email=data.email,
             ),

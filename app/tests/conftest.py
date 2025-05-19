@@ -53,10 +53,9 @@ async def redis():
     await redis.aclose()
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 async def worker():
     process = await asyncio.create_subprocess_exec("make", "worker-dev")
-    await asyncio.sleep(1)
     yield
     process.terminate()
     await process.wait()

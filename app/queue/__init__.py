@@ -1,5 +1,3 @@
-from typing import Callable
-
 from litestar_saq import QueueConfig, SAQConfig
 from redis.asyncio import Redis
 from saq import Job, Queue
@@ -47,23 +45,39 @@ saq_config = SAQConfig(
 )
 
 
-def _is_registered_task(func: Callable):
-    return [
-        queue_config
-        for queue_config in saq_config.queue_configs
-        if func.__qualname__ in [task.__qualname__ for task in queue_config.tasks]
-    ]
-
-
 async def enqueue_task(
-    queue: Queue, func: Callable, retries: int = 3, retry_backoff: bool = True, **kwargs
+    func: str,
+    retries: int = 3,
+    retry_backoff: bool = True,
+    queue: Queue = None,
+    **kwargs,
 ):
-    if not _is_registered_task(func=func):
-        raise Exception(f"{func.__qualname__} is not a registered task.")
+    if not queue:
+        queue = saq_config.get_queues().get("default")
 
     return await queue.enqueue(
         Job(
-            func.__qualname__,
+            func,
+            kwargs=kwargs,
+            retries=retries,
+            retry_backoff=retry_backoff,
+        )
+    )
+
+
+async def apply_task(
+    func: str,
+    retries: int = 3,
+    retry_backoff: bool = True,
+    queue: Queue = None,
+    **kwargs,
+):
+    if not queue:
+        queue = saq_config.get_queues().get("default")
+
+    return await queue.apply(
+        Job(
+            func,
             kwargs=kwargs,
             retries=retries,
             retry_backoff=retry_backoff,

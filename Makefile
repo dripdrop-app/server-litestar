@@ -28,7 +28,7 @@ run-dev:
 
 .PHONY: worker-dev
 worker-dev:
-	infisical run --env=dev -- uv run litestar workers run --reload --debug
+	infisical run --env=dev -- uv run litestar workers run --verbose --debug
 
 .PHONY: clean
 clean:

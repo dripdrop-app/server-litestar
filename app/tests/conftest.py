@@ -1,18 +1,16 @@
-from typing import Callable
+import asyncio
+from unittest.mock import MagicMock
 
 import pytest
 from faker import Faker
 from litestar import status_codes
 from litestar.testing import AsyncTestClient
 from redis.asyncio.client import Redis
-from saq import Queue
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app import app
 from app.db import sqlalchemy_config
 from app.db.models.users import User, provide_users_repo
-from app.queue import _is_registered_task, shutdown, startup
-from app.queue.context import SAQContext
 from app.services import tempfiles
 from app.settings import ENV, settings
 
@@ -53,6 +51,15 @@ async def redis():
     await redis.flushall()
     yield redis
     await redis.aclose()
+
+
+@pytest.fixture(scope="function", autouse=True)
+async def worker():
+    process = await asyncio.create_subprocess_exec("make", "worker-dev")
+    await asyncio.sleep(1)
+    yield
+    process.terminate()
+    await process.wait()
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -117,20 +124,6 @@ async def create_and_login_user(faker, create_user, login_user):
 
 @pytest.fixture(scope="function", autouse=True)
 async def mock_enqueue_task(monkeypatch: pytest.MonkeyPatch):
-    async def test_enqueue_task(
-        queue: Queue,
-        func: Callable,
-        retries: int = 3,
-        retry_backoff: bool = True,
-        **kwargs,
-    ):
-        if not _is_registered_task(func=func):
-            raise Exception(f"{func.__qualname__} is not a registered task.")
-
-        context = SAQContext()
-        await startup(context)
-        await func(context, **kwargs)
-        await shutdown(context)
-        return
-
-    monkeypatch.setattr("app.routes.authentication.enqueue_task", test_enqueue_task)
+    mock_func = MagicMock()
+    monkeypatch.setattr("app.routes.authentication.enqueue_task", mock_func)
+    return mock_func

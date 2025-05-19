@@ -17,7 +17,6 @@ from app.db.models.musicjob import (
 from app.db.models.users import User
 from app.models.music import CreateMusicJob
 from app.queue import enqueue_task
-from app.queue.music import run_music_job
 
 
 class JobController(Controller):
@@ -76,7 +75,7 @@ class JobController(Controller):
                     BackgroundTask(
                         enqueue_task,
                         queue=task_queues.get("default"),
-                        func=run_music_job,
+                        func="run_music_job",
                         music_job_id=str(music_job.id),
                     ),
                 ]

@@ -22,7 +22,6 @@ from app.models.authentication import (
     SessionUser,
 )
 from app.queue import enqueue_task
-from app.queue.email import send_password_reset_email, send_verification_email
 
 
 @get("/session", status_code=status_codes.HTTP_200_OK)
@@ -73,7 +72,7 @@ async def create_account(
         background=BackgroundTask(
             enqueue_task,
             queue=task_queues.get("default"),
-            func=send_verification_email,
+            func="send_verification_email",
             email=data.email,
             base_url=request.headers.get("Host", request.base_url),
         ),
@@ -114,7 +113,7 @@ async def send_reset_email(
             background=BackgroundTask(
                 enqueue_task,
                 queue=task_queues.get("default"),
-                func=send_password_reset_email,
+                func="send_password_reset_email",
                 email=data.email,
             ),
         )

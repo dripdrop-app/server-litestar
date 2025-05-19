@@ -53,6 +53,3 @@ async def send_password_reset_email(ctx: SAQContext, email: str):
         subject="Reset Password",
         html=html,
     )
-
-
-tasks = [send_verification_email, send_password_reset_email]

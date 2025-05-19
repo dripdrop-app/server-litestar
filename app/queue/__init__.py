@@ -4,12 +4,15 @@ from saq import Job, Queue
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.db import sqlalchemy_config
-from app.queue import email, music
 from app.queue.context import SAQContext
 from app.settings import ENV, settings
 
-tasks = [*email.tasks, *music.tasks]
-on_fail_tasks = {**music.on_fail_tasks}
+tasks = [
+    "app.queue.email.send_verification_email",
+    "app.queue.email.send_password_reset_email",
+    "app.queue.music.run_music_job",
+]
+on_fail_tasks = {"app.queue.music.run_music_job": "app.queue.music.on_failed_music_job"}
 
 
 async def startup(ctx: SAQContext):
@@ -33,6 +36,7 @@ async def after_process(ctx: SAQContext):
 saq_config = SAQConfig(
     queue_configs=[
         QueueConfig(
+            name="default",
             dsn=settings.redis_url,
             tasks=tasks,
             startup=startup,

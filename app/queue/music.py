@@ -124,7 +124,3 @@ async def on_failed_music_job(ctx: SAQContext):
         music_job = await music_jobs_repo.get_one(MusicJob.id == music_job_id)
         music_job.failed = True
         await music_jobs_repo.update(music_job)
-
-
-tasks = [run_music_job]
-on_fail_tasks = {run_music_job.__qualname__: on_failed_music_job}

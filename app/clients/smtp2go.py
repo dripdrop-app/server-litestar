@@ -11,3 +11,4 @@ def send_email(sender: str, recipient: str, subject: str, html: str):
     )
     if not response.success:
         raise Exception("Failed to send email.", response.errors)
+    return response

@@ -20,6 +20,7 @@ from app.models.authentication import (
     SendResetPassword,
     SessionUser,
 )
+from app.queue.email import send_password_reset_email, send_verification_email
 
 
 @get("/session", status_code=status_codes.HTTP_200_OK)
@@ -58,7 +59,6 @@ async def logout(request: Request) -> dict:
 async def create_account(
     data: Annotated[CreateUser, Body()],
     users_repo: UserRespository,
-    # task_queues: TaskQueues,
     request: Request,
 ) -> dict:
     if await users_repo.get_one_or_none(User.email == data.email):
@@ -67,12 +67,11 @@ async def create_account(
     return Response(
         content={"detail": "Success."},
         status_code=status_codes.HTTP_200_OK,
-        # background=BackgroundTask(
-        #     enqueue_task,
-        #     func="send_verification_email",
-        #     email=data.email,
-        #     base_url=request.headers.get("Host", request.base_url),
-        # ),
+        background=BackgroundTask(
+            send_verification_email.delay,
+            email=data.email,
+            base_url=request.headers.get("Host", request.base_url),
+        ),
     )
 
 
@@ -106,11 +105,10 @@ async def send_reset_email(
         return Response(
             content={"detail": "Success."},
             status_code=status_codes.HTTP_200_OK,
-            # background=BackgroundTask(
-            #     enqueue_task,
-            #     func="send_password_reset_email",
-            #     email=data.email,
-            # ),
+            background=BackgroundTask(
+                send_password_reset_email.delay,
+                email=data.email,
+            ),
         )
     raise ClientException(detail="Account does not exist.")
 

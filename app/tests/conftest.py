@@ -32,6 +32,7 @@ async def init_temp():
 
 @pytest.fixture(scope="function", autouse=True)
 async def db_session():
+    # Don't use engine from sqlalchemy_config as the app will handle it's lifecycle.
     sqlalchemy_engine = create_async_engine(settings.async_database_url)
     async with sqlalchemy_engine.begin() as conn:
         await conn.run_sync(sqlalchemy_config.metadata.drop_all)

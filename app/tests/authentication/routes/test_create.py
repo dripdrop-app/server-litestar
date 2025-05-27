@@ -24,11 +24,14 @@ async def test_create_when_user_exists(client, faker, create_user):
     }
 
 
-async def test_create(client, faker, db_session, mock_enqueue_task, monkeypatch):
+async def test_create(client, faker, db_session, monkeypatch):
     """
     Test creating an account. The endpoint should return a 200
     response and the user should not be verified.
     """
+
+    mock_task = MagicMock()
+    monkeypatch.setattr("app.queue.email.send_verification_email.delay", mock_task)
 
     email = faker.email()
     password = faker.password()
@@ -42,7 +45,6 @@ async def test_create(client, faker, db_session, mock_enqueue_task, monkeypatch)
     assert user.verified is False
     assert user.check_password(password) is True
 
-    mock_enqueue_task.assert_called_once()
-    kwargs = mock_enqueue_task.call_args.kwargs
+    mock_task.assert_called_once()
+    kwargs = mock_task.call_args.kwargs
     assert kwargs["email"] == email
-    assert kwargs["func"] == "send_verification_email"

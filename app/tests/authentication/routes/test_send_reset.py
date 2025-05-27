@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 from litestar import status_codes
 
 from app.db.models.users import User
@@ -34,17 +36,19 @@ async def test_send_reset_with_unverified_user(client, create_user):
     }
 
 
-async def test_send_reset(client, create_user, mock_enqueue_task):
+async def test_send_reset(client, create_user, monkeypatch):
     """
     Test sending a password reset email to a user. The endpoint should return a 200 response and the
     email should be sent out.
     """
 
+    mock_task = MagicMock()
+    monkeypatch.setattr("app.queue.email.send_password_reset_email.delay", mock_task)
+
     user: User = await create_user()
     response = await client.post(URL, json={"email": user.email})
     assert response.status_code == status_codes.HTTP_200_OK
 
-    mock_enqueue_task.assert_called_once()
-    kwargs = mock_enqueue_task.call_args.kwargs
+    mock_task.assert_called_once()
+    kwargs = mock_task.call_args.kwargs
     assert kwargs["email"] == user.email
-    assert kwargs["func"] == "send_password_reset_email"

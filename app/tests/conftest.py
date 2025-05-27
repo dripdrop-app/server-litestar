@@ -1,6 +1,3 @@
-import asyncio
-from unittest.mock import MagicMock
-
 import pytest
 from faker import Faker
 from litestar import status_codes
@@ -51,14 +48,6 @@ async def redis():
     await redis.flushall()
     yield redis
     await redis.aclose()
-
-
-@pytest.fixture(scope="session", autouse=True)
-async def worker():
-    process = await asyncio.create_subprocess_exec("make", "worker-dev")
-    yield
-    process.terminate()
-    await process.wait()
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -119,10 +108,3 @@ async def create_and_login_user(faker, create_user, login_user):
         return user
 
     return _run
-
-
-@pytest.fixture(scope="function", autouse=True)
-async def mock_enqueue_task(monkeypatch: pytest.MonkeyPatch):
-    mock_func = MagicMock()
-    monkeypatch.setattr("app.routes.authentication.enqueue_task", mock_func)
-    return mock_func

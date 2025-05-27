@@ -15,7 +15,6 @@ from app.db.models.musicjob import (
 )
 from app.db.models.users import User
 from app.models.music import CreateMusicJob
-from app.queue import enqueue_task
 
 
 class JobController(Controller):
@@ -70,11 +69,11 @@ class JobController(Controller):
                         data.file,
                         data.artwork_url,
                     ),
-                    BackgroundTask(
-                        enqueue_task,
-                        func="run_music_job",
-                        music_job_id=str(music_job.id),
-                    ),
+                    # BackgroundTask(
+                    #     enqueue_task,
+                    #     func="run_music_job",
+                    #     music_job_id=str(music_job.id),
+                    # ),
                 ]
             ),
         )

@@ -10,7 +10,8 @@ from app.channels import MUSIC_JOB_UPDATE, publish_message
 from app.clients import audiotags, ffmpeg, imagedownloader, invidious, s3, ytdlp
 from app.db.models.musicjob import MusicJob, MusicJobRespository
 from app.models.music import MusicJobUpdateResponse
-from app.queue.context import SAQContext
+from app.queue.app import celery
+from app.queue.task import QueueTask
 from app.services import tempfiles
 from app.settings import settings
 from app.utils.youtube import parse_youtube_video_id
@@ -18,6 +19,7 @@ from app.utils.youtube import parse_youtube_video_id
 JOB_DIR = "music_jobs"
 
 
+@celery.task
 async def retrieve_audio_file(music_job: MusicJob):
     jobs_root_directory = await tempfiles.create_new_directory(JOB_DIR)
     job_file_path = Path(jobs_root_directory).joinpath(JOB_DIR)
@@ -50,6 +52,7 @@ async def retrieve_audio_file(music_job: MusicJob):
     return filename
 
 
+@celery.task
 def update_audio_tags(
     music_job: MusicJob,
     filename: str,
@@ -68,9 +71,9 @@ def update_audio_tags(
         )
 
 
-async def run_music_job(ctx: SAQContext, music_job_id: str):
-    sessionmaker = ctx["db_sessionmaker"]
-    async with sessionmaker() as session:
+@celery.task(bind=True)
+async def run_music_job(self: QueueTask, music_job_id: str):
+    async with self.db_session() as session:
         music_jobs_repo = MusicJobRespository(session=session)
         music_job = await music_jobs_repo.get_one(MusicJob.id == music_job_id)
         await publish_message(
@@ -104,7 +107,9 @@ async def run_music_job(ctx: SAQContext, music_job_id: str):
 
         async with aiofiles.open(filename, mode="rb") as f:
             await s3.upload_file(
-                filename=new_filename, body=await f.read(), content_type="audio/mpeg"
+                filename=new_filename,
+                body=await f.read(),
+                content_type="audio/mpeg",
             )
 
         await publish_message(
@@ -115,12 +120,12 @@ async def run_music_job(ctx: SAQContext, music_job_id: str):
         )
 
 
-async def on_failed_music_job(ctx: SAQContext):
-    job = ctx["job"]
-    session = ctx["db_sessionmaker"]()
-    if job.function == run_music_job.__qualname__:
-        music_job_id = job.kwargs.get("music_job_id")
-        music_jobs_repo = MusicJobRespository(session=session)
-        music_job = await music_jobs_repo.get_one(MusicJob.id == music_job_id)
-        music_job.failed = True
-        await music_jobs_repo.update(music_job)
+# async def on_failed_music_job(ctx: SAQContext):
+#     job = ctx["job"]
+#     session = ctx["db_sessionmaker"]()
+#     if job.function == run_music_job.__qualname__:
+#         music_job_id = job.kwargs.get("music_job_id")
+#         music_jobs_repo = MusicJobRespository(session=session)
+#         music_job = await music_jobs_repo.get_one(MusicJob.id == music_job_id)
+#         music_job.failed = True
+#         await music_jobs_repo.update(music_job)

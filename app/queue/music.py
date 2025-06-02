@@ -19,7 +19,6 @@ from app.utils.youtube import parse_youtube_video_id
 JOB_DIR = "music_jobs"
 
 
-@celery.task
 async def retrieve_audio_file(music_job: MusicJob):
     jobs_root_directory = await tempfiles.create_new_directory(JOB_DIR)
     job_file_path = Path(jobs_root_directory).joinpath(JOB_DIR)
@@ -52,7 +51,6 @@ async def retrieve_audio_file(music_job: MusicJob):
     return filename
 
 
-@celery.task
 def update_audio_tags(
     music_job: MusicJob,
     filename: str,
@@ -71,7 +69,12 @@ def update_audio_tags(
         )
 
 
-@celery.task(bind=True)
+@celery.task
+async def on_failed_music_job(request, exc, traceback):
+    print(request)
+
+
+@celery.task(bind=True, link_error=on_failed_music_job.s())
 async def run_music_job(self: QueueTask, music_job_id: str):
     async with self.db_session() as session:
         music_jobs_repo = MusicJobRespository(session=session)
@@ -82,7 +85,10 @@ async def run_music_job(self: QueueTask, music_job_id: str):
                 MusicJobUpdateResponse(id=music_job_id, status="STARTED").model_dump()
             ),
         )
-        filename = await retrieve_audio_file(music_job=music_job)
+
+        if not (filename := await retrieve_audio_file(music_job=music_job)):
+            raise Exception("File not found")
+
         artwork_info = None
         try:
             artwork_info = await imagedownloader.retrieve_artwork(
@@ -90,6 +96,7 @@ async def run_music_job(self: QueueTask, music_job_id: str):
             )
         except Exception:
             pass
+
         await asyncio.to_thread(
             update_audio_tags,
             music_job=music_job,
@@ -118,14 +125,3 @@ async def run_music_job(self: QueueTask, music_job_id: str):
                 MusicJobUpdateResponse(id=music_job_id, status="COMPLETED").model_dump()
             ),
         )
-
-
-# async def on_failed_music_job(ctx: SAQContext):
-#     job = ctx["job"]
-#     session = ctx["db_sessionmaker"]()
-#     if job.function == run_music_job.__qualname__:
-#         music_job_id = job.kwargs.get("music_job_id")
-#         music_jobs_repo = MusicJobRespository(session=session)
-#         music_job = await music_jobs_repo.get_one(MusicJob.id == music_job_id)
-#         music_job.failed = True
-#         await music_jobs_repo.update(music_job)

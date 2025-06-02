@@ -1,3 +1,4 @@
+import httpx
 import pytest
 from faker import Faker
 from litestar import status_codes
@@ -6,7 +7,9 @@ from redis.asyncio.client import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app import app
+from app.clients import s3
 from app.db import sqlalchemy_config
+from app.db.models.musicjob import MusicJob, provide_music_jobs_repo
 from app.db.models.users import User, provide_users_repo
 from app.services import tempfiles
 from app.settings import ENV, settings
@@ -28,6 +31,14 @@ async def init_temp():
     await tempfiles.create_temp_directory()
     yield
     await tempfiles.cleanup_temp_directory()
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def clean_s3():
+    yield
+    async for filenames in s3.list_filenames(prefix="music/"):
+        for filename in filenames:
+            await s3.delete_file(filename=filename)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -107,5 +118,66 @@ async def create_and_login_user(faker, create_user, login_user):
         )
         await login_user(email=user.email, password=password)
         return user
+
+    return _run
+
+
+@pytest.fixture(scope="session")
+async def test_video_url():
+    return "https://www.youtube.com/watch?v=C0DPdy98e4c"
+
+
+@pytest.fixture(scope="session")
+async def test_audio_url():
+    return s3.resolve_url("assets/07 tun suh.mp3")
+
+
+@pytest.fixture(scope="session")
+async def test_image():
+    image_url = s3.resolve_url("assets/dripdrop.png")
+    async with httpx.AsyncClient() as client:
+        response = await client.get(image_url)
+        assert response.is_success is True
+        yield image_url, response.content
+
+
+@pytest.fixture(scope="session")
+async def test_audio(test_audio_url):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(test_audio_url)
+        assert response.is_success is True
+        yield response.content
+
+
+@pytest.fixture(scope="function")
+async def create_music_job(db_session: AsyncSession, faker: Faker):
+    async def _run(
+        email: str,
+        file: bytes = None,
+        video_url: str = None,
+        artwork_url: str = None,
+        title: str = None,
+        artist: str = None,
+        album: str = None,
+        grouping: str = None,
+    ):
+        music_job_repo = await provide_music_jobs_repo(db_session=db_session)
+        music_job = await music_job_repo.add(
+            MusicJob(
+                user_email=email,
+                video_url=video_url,
+                title=title or faker.sentence(),
+                artist=artist or faker.name(),
+                album=album or faker.word(),
+                grouping=grouping,
+                completed=False,
+                failed=False,
+            ),
+        )
+        await music_job.upload_files(
+            file=file,
+            artwork_url=artwork_url,
+        )
+        return music_job
 
     return _run

@@ -46,14 +46,18 @@ async def delete_file(filename: str):
     )
 
 
-async def list_objects():
+async def list_filenames(prefix: str = ""):
     continuation_token = ""
     while True:
         params = {"Bucket": settings.aws_s3_bucket}
+        if prefix:
+            params["Prefix"] = prefix
         if continuation_token:
             params["ContinuationToken"] = continuation_token
         response = await asyncio.to_thread(_client.list_objects_v2, **params)
-        objects = map(lambda object: object["Key"], response.get("Contents", []))
+        objects: list[str] = list(
+            map(lambda object: object["Key"], response.get("Contents", []))
+        )
         yield objects
         if not response.get("IsTruncated"):
             break

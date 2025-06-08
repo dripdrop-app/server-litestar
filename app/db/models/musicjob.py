@@ -31,8 +31,8 @@ class MusicJob(base.UUIDAuditBase):
     artist: Mapped[str] = mapped_column(nullable=False)
     album: Mapped[str] = mapped_column(nullable=False)
     grouping: Mapped[str | None] = mapped_column(nullable=True)
-    completed: Mapped[bool] = mapped_column(nullable=False)
-    failed: Mapped[bool] = mapped_column(nullable=False)
+    completed: Mapped[datetime | None] = mapped_column(nullable=True)
+    failed: Mapped[datetime | None] = mapped_column(nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )

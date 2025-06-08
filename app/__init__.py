@@ -4,7 +4,11 @@ from litestar.di import Provide
 from litestar.plugins import htmx, pydantic, sqlalchemy
 from litestar.stores.redis import RedisStore
 
-from app.channels import MUSIC_JOB_UPDATE, YOUTUBE_CHANNEL_UPDATE, channels_backend
+from app.channels import (
+    MUSIC_JOB_UPDATE,
+    YOUTUBE_CHANNEL_UPDATE,
+    channels_backend,
+)
 from app.db import sqlalchemy_config
 from app.dependencies import provide_redis
 from app.routes import authentication, music

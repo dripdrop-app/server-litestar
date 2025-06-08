@@ -1,5 +1,6 @@
 import asyncio
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import aiofiles
@@ -7,21 +8,20 @@ import httpx
 from yt_dlp.utils import sanitize_filename
 
 from app.channels import MUSIC_JOB_UPDATE, publish_message
-from app.clients import audiotags, ffmpeg, imagedownloader, invidious, s3, ytdlp
-from app.db.models.musicjob import MusicJob, MusicJobRespository
+from app.clients import audiotags, ffmpeg, imagedownloader, s3, ytdlp
+from app.db.models.musicjob import MusicJob, provide_music_jobs_repo
 from app.models.music import MusicJobUpdateResponse
 from app.queue.app import celery
 from app.queue.task import QueueTask
 from app.services import tempfiles
 from app.settings import settings
-from app.utils.youtube import parse_youtube_video_id
 
 JOB_DIR = "music_jobs"
 
 
 async def retrieve_audio_file(music_job: MusicJob):
     jobs_root_directory = await tempfiles.create_new_directory(JOB_DIR)
-    job_file_path = Path(jobs_root_directory).joinpath(JOB_DIR)
+    job_file_path = Path(jobs_root_directory).joinpath(str(music_job.id))
     filename = None
     if music_job.filename_url:
         async with httpx.AsyncClient() as client:
@@ -36,18 +36,19 @@ async def retrieve_audio_file(music_job: MusicJob):
 
             filename = await ffmpeg.convert_audio_to_mp3(audio_file=audio_file_path)
     elif music_job.video_url:
-        if "youtube.com" in music_job.video_url:
-            video_id = parse_youtube_video_id(music_job.video_url)
-            audio_file_path = Path(job_file_path).joinpath("temp.audio")
-            await invidious.download_audio_from_youtube_video(
-                video_id=video_id, download_path=audio_file_path
-            )
-            filename = await ffmpeg.convert_audio_to_mp3(audio_file=audio_file_path)
-        else:
-            filename = Path(job_file_path).joinpath("temp.mp3")
-            await ytdlp.download_audio_from_video(
-                url=music_job.video_url, download_path=f"{Path(filename).stem}"
-            )
+        # NOTE: Invidious doesn't work atm
+        # if "youtube.com" in music_job.video_url:
+        #     video_id = parse_youtube_video_id(music_job.video_url)
+        #     audio_file_path = Path(job_file_path).joinpath("temp.audio")
+        #     await invidious.download_audio_from_youtube_video(
+        #         video_id=video_id, download_path=audio_file_path
+        #     )
+        #     filename = await ffmpeg.convert_audio_to_mp3(audio_file=audio_file_path)
+        # else:
+        filename = str(Path(job_file_path).joinpath("temp.mp3"))
+        await ytdlp.download_audio_from_video(
+            url=music_job.video_url, download_path=filename.replace(".mp3", "")
+        )
     return filename
 
 
@@ -69,6 +70,13 @@ def update_audio_tags(
         )
 
 
+async def get_artwork_info(music_job: MusicJob):
+    try:
+        return await imagedownloader.retrieve_artwork(artwork_url=music_job.artwork_url)
+    except Exception:
+        return None
+
+
 @celery.task
 async def on_failed_music_job(request, exc, traceback):
     print(request)
@@ -76,8 +84,8 @@ async def on_failed_music_job(request, exc, traceback):
 
 @celery.task(bind=True, link_error=on_failed_music_job.s())
 async def run_music_job(self: QueueTask, music_job_id: str):
-    async with self.db_session() as session:
-        music_jobs_repo = MusicJobRespository(session=session)
+    async with self.db_session() as db_session:
+        music_jobs_repo = await provide_music_jobs_repo(db_session=db_session)
         music_job = await music_jobs_repo.get_one(MusicJob.id == music_job_id)
         await publish_message(
             MUSIC_JOB_UPDATE,
@@ -89,13 +97,7 @@ async def run_music_job(self: QueueTask, music_job_id: str):
         if not (filename := await retrieve_audio_file(music_job=music_job)):
             raise Exception("File not found")
 
-        artwork_info = None
-        try:
-            artwork_info = await imagedownloader.retrieve_artwork(
-                artwork_url=music_job.artwork_url
-            )
-        except Exception:
-            pass
+        artwork_info = await get_artwork_info(music_job=music_job)
 
         await asyncio.to_thread(
             update_audio_tags,
@@ -103,6 +105,7 @@ async def run_music_job(self: QueueTask, music_job_id: str):
             filename=filename,
             artwork_info=artwork_info,
         )
+
         new_filename = sanitize_filename(
             "{folder}/{job_id}/{title} {artist}.mp3"
         ).format(
@@ -118,6 +121,11 @@ async def run_music_job(self: QueueTask, music_job_id: str):
                 body=await f.read(),
                 content_type="audio/mpeg",
             )
+
+        music_job.download_filename = new_filename
+        music_job.download_url = s3.resolve_url(filename=new_filename)
+        music_job.completed = datetime.now(tz=UTC)
+        await music_jobs_repo.update(music_job)
 
         await publish_message(
             MUSIC_JOB_UPDATE,

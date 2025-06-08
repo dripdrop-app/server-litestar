@@ -62,6 +62,26 @@ async def redis():
     await redis.aclose()
 
 
+@pytest.fixture(scope="function")
+async def get_pubsub_channel_messages(redis: Redis):
+    async def _run(channel: str, max_num_messages: int, timeout=60):
+        pubsub = redis.pubsub()
+        await pubsub.subscribe(channel)
+        messages = []
+        while len(messages) < max_num_messages:
+            # Need to include subscribe messages as it returns None
+            # when a subscribe message is recieved
+            message = await pubsub.get_message(timeout=timeout)
+            if not message:
+                break
+            if message["type"] == "subscribe":
+                continue
+            messages.append(message)
+        return messages
+
+    return _run
+
+
 @pytest.fixture(scope="function", autouse=True)
 async def faker():
     return Faker()
@@ -170,8 +190,6 @@ async def create_music_job(db_session: AsyncSession, faker: Faker):
                 artist=artist or faker.name(),
                 album=album or faker.word(),
                 grouping=grouping,
-                completed=False,
-                failed=False,
             ),
         )
         await music_job.upload_files(

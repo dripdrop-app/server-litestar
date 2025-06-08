@@ -20,7 +20,7 @@ async def create_temp_directory():
 
 
 async def create_new_directory(directory: str):
-    directory_path = Path(TEMP_DIRECTORY).joinpath(Path(directory).resolve())
+    directory_path = Path(TEMP_DIRECTORY).resolve().joinpath(Path(directory))
     await create_temp_directory()
     try:
         await aiofiles.os.mkdir(directory_path)

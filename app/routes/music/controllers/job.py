@@ -56,8 +56,6 @@ class JobController(Controller):
                 artist=data.artist,
                 album=data.album,
                 grouping=data.grouping,
-                completed=False,
-                failed=False,
             )
         )
         return Response(

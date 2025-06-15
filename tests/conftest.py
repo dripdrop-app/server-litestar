@@ -11,6 +11,7 @@ from app.clients import s3
 from app.db import sqlalchemy_config
 from app.db.models.musicjob import MusicJob, provide_music_jobs_repo
 from app.db.models.users import User, provide_users_repo
+from app.pubsub import PubSub
 from app.services import tempfiles
 from app.settings import ENV, settings
 
@@ -63,20 +64,18 @@ async def redis():
 
 
 @pytest.fixture(scope="function")
-async def get_pubsub_channel_messages(redis: Redis):
-    async def _run(channel: str, max_num_messages: int, timeout=60):
-        pubsub = redis.pubsub()
-        await pubsub.subscribe(channel)
+async def get_pubsub_channel_messages():
+    async def _run(channel: str, max_num_messages: int, timeout: int = 60):
+        pubsub = PubSub(channels=[channel])
         messages = []
-        while len(messages) < max_num_messages:
-            # Need to include subscribe messages as it returns None
-            # when a subscribe message is recieved
-            message = await pubsub.get_message(timeout=timeout)
+        async for message in pubsub.listen(
+            ignore_subscribe_messages=True, timeout=timeout
+        ):
             if not message:
-                break
-            if message["type"] == "subscribe":
-                continue
+                pubsub.stop_listening()
             messages.append(message)
+            if len(messages) == max_num_messages:
+                pubsub.stop_listening()
         return messages
 
     return _run

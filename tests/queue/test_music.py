@@ -4,10 +4,10 @@ import httpx
 import pytest
 from advanced_alchemy.exceptions import NotFoundError
 
-from app.channels import MUSIC_JOB_UPDATE
 from app.clients import audiotags
 from app.db.models.musicjob import MusicJob
 from app.db.models.users import User
+from app.pubsub import PubSub
 from app.queue.music import run_music_job
 
 
@@ -61,7 +61,7 @@ async def test_run_music_job(
     task = run_music_job(music_job_id=str(music_job.id))
 
     pubsub_messages = await get_pubsub_channel_messages(
-        MUSIC_JOB_UPDATE, max_num_messages=2
+        PubSub.Channels.MUSIC_JOB_UPDATE, max_num_messages=2
     )
 
     await task

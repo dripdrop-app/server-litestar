@@ -7,10 +7,10 @@ import aiofiles
 import httpx
 from yt_dlp.utils import sanitize_filename
 
-from app.channels import MUSIC_JOB_UPDATE, publish_message
 from app.clients import audiotags, ffmpeg, imagedownloader, s3, ytdlp
 from app.db.models.musicjob import MusicJob, provide_music_jobs_repo
 from app.models.music import MusicJobUpdateResponse
+from app.pubsub import PubSub
 from app.queue.app import celery
 from app.queue.task import QueueTask
 from app.services import tempfiles
@@ -84,11 +84,11 @@ async def on_failed_music_job(request, exc, traceback):
 
 @celery.task(bind=True, link_error=on_failed_music_job.s())
 async def run_music_job(self: QueueTask, music_job_id: str):
+    pubsub = PubSub(channels=[PubSub.Channels.MUSIC_JOB_UPDATE])
     async with self.db_session() as db_session:
         music_jobs_repo = await provide_music_jobs_repo(db_session=db_session)
         music_job = await music_jobs_repo.get_one(MusicJob.id == music_job_id)
-        await publish_message(
-            MUSIC_JOB_UPDATE,
+        await pubsub.publish_message(
             json.dumps(
                 MusicJobUpdateResponse(id=music_job_id, status="STARTED").model_dump()
             ),
@@ -127,8 +127,7 @@ async def run_music_job(self: QueueTask, music_job_id: str):
         music_job.completed = datetime.now(tz=UTC)
         await music_jobs_repo.update(music_job)
 
-        await publish_message(
-            MUSIC_JOB_UPDATE,
+        await pubsub.publish_message(
             json.dumps(
                 MusicJobUpdateResponse(id=music_job_id, status="COMPLETED").model_dump()
             ),

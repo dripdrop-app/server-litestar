@@ -3,16 +3,19 @@ from contextlib import asynccontextmanager
 
 from celery import Task
 from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.db import sqlalchemy_config
 from app.settings import settings
 
 
 class QueueTask(Task):
     @asynccontextmanager
     async def db_session(self):
-        async with sqlalchemy_config.get_session() as session:
+        engine = create_async_engine(settings.async_database_url)
+        sessionmaker = async_sessionmaker(engine)
+        async with sessionmaker() as session:
             yield session
+        await engine.dispose()
 
     @asynccontextmanager
     async def redis_client(self):

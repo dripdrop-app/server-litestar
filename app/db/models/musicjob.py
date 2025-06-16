@@ -79,13 +79,15 @@ class MusicJob(base.UUIDAuditBase):
                 if response.is_success and imagedownloader.is_image_link(response):
                     self.artwork_url = artwork_url
 
-    async def upload_files(self, file: UploadFile, artwork_url: str | None = None):
+    async def upload_files(
+        self, file: UploadFile | None = None, artwork_url: str | None = None
+    ):
         async with sqlalchemy_config.get_session() as db_session:
             if file:
                 await self._upload_audio_file(file=file)
             if artwork_url:
                 await self._upload_artwork_url(artwork_url=artwork_url)
-            music_job_repo = MusicJobRespository(session=db_session)
+            music_job_repo = await provide_music_jobs_repo(db_session=db_session)
             await music_job_repo.update(self)
 
 

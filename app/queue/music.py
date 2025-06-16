@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import aiofiles
+import aiofiles.os
 import httpx
 from yt_dlp.utils import sanitize_filename
 
@@ -22,10 +23,11 @@ JOB_DIR = "music_jobs"
 async def retrieve_audio_file(music_job: MusicJob):
     jobs_root_directory = await tempfiles.create_new_directory(JOB_DIR)
     job_file_path = Path(jobs_root_directory).joinpath(str(music_job.id))
+    await aiofiles.os.mkdir(job_file_path)
+
     filename = None
     if music_job.filename_url:
         async with httpx.AsyncClient() as client:
-            client.stream()
             response = await client.get(music_job.filename_url)
             audio_file_path = job_file_path.joinpath(
                 f"temp{Path(music_job.original_filename).suffix}"

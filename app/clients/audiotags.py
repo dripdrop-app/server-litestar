@@ -85,19 +85,17 @@ class AudioTags:
         self.tags.add(mutagen.id3.APIC(mime=mime_type, data=data))
         self.tags.save()
 
-    def get_artwork_as_base64(self):
-        tag = self.artwork
-        if tag:
-            buffer = io.BytesIO(tag.data)
-            base64_string = base64.b64encode(buffer.getvalue()).decode()
-            mime_type = tag.mime
-            if not mime_type:
-                if base64_string.startswith("/9j"):
-                    mime_type = "image/jpg"
-                elif base64_string.startswith("iVBORw0KGgo"):
-                    mime_type = "image/png"
-            return f"data:{mime_type};base64,{base64_string}"
-        return None
+    @classmethod
+    def get_image_as_base64(cls, image: bytes, mime_type: str | None = None):
+        buffer = io.BytesIO(image)
+        base64_string = base64.b64encode(buffer.getvalue()).decode()
+        mime_type = mime_type
+        if not mime_type:
+            if base64_string.startswith("/9j"):
+                mime_type = "image/jpg"
+            elif base64_string.startswith("iVBORw0KGgo"):
+                mime_type = "image/png"
+        return f"data:{mime_type};base64,{base64_string}"
 
     @classmethod
     async def read_tags(cls, file: bytes, filename: str):
@@ -120,7 +118,13 @@ class AudioTags:
                 artist=audio_tags.artist,
                 album=audio_tags.album,
                 grouping=audio_tags.grouping,
-                artwork_url=audio_tags.get_artwork_as_base64(),
+                artwork_url=await asyncio.to_thread(
+                    AudioTags.get_image_as_base64,
+                    image=audio_tags.artwork.data,
+                    mime_type=audio_tags.artwork.mime,
+                )
+                if audio_tags.artwork
+                else None,
             )
         except Exception:
             logger.exception(traceback.format_exc())

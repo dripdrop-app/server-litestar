@@ -72,11 +72,11 @@ async def test_run_music_job_messages(
     }
 
 
-async def test_run_music_job_with_video_url(
+async def test_run_music_job_with_audio_url(
     create_user,
     create_music_job,
     db_session,
-    test_video_url,
+    test_audio_url,
 ):
     """
     Test running a music job with a video url. The music job
@@ -85,7 +85,7 @@ async def test_run_music_job_with_video_url(
 
     user: User = await create_user()
     music_job: MusicJob = await create_music_job(
-        email=user.email, video_url=test_video_url
+        email=user.email, video_url=test_audio_url
     )
 
     expected_title = music_job.title
@@ -164,3 +164,56 @@ async def test_run_music_job_with_file(
         assert tags.artist == expected_artist
         assert tags.album == expected_album
         assert tags.grouping == expected_grouping
+
+
+async def test_run_music_job_with_external_artwork(
+    create_user,
+    create_music_job,
+    db_session,
+    test_audio_url,
+    test_image_url,
+    test_image,
+):
+    """
+    Test running a music job with an artwork url given. The music job
+    should complete successfully with an artwork tag set.
+    """
+
+    user: User = await create_user()
+    music_job: MusicJob = await create_music_job(
+        email=user.email, video_url=test_audio_url, artwork_url=test_image_url
+    )
+
+    expected_title = music_job.title
+    expected_artist = music_job.artist
+    expected_album = music_job.album
+    expected_grouping = music_job.grouping
+
+    await run_music_job(music_job_id=str(music_job.id))
+
+    await db_session.refresh(music_job)
+
+    assert music_job.title == expected_title
+    assert music_job.artist == expected_artist
+    assert music_job.album == expected_album
+    assert music_job.grouping == expected_grouping
+    assert music_job.completed is not None
+    assert music_job.download_url is not None
+    assert music_job.download_filename is not None
+    assert music_job.artwork_url is not None
+    assert music_job.artwork_filename is None
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(music_job.download_url)
+        assert response.status_code == 200
+        assert response.headers.get("Content-Type") == "audio/mpeg"
+        tags = await audiotags.AudioTags.read_tags(
+            file=response.content, filename="test.mp3"
+        )
+        assert tags.title == expected_title
+        assert tags.artist == expected_artist
+        assert tags.album == expected_album
+        assert tags.grouping == expected_grouping
+        assert tags.artwork_url == audiotags.AudioTags.get_image_as_base64(
+            test_image, "image/png"
+        )

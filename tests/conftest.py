@@ -44,15 +44,14 @@ async def clean_s3():
 
 @pytest.fixture(scope="function", autouse=True)
 async def db_session():
-    # Don't use engine from sqlalchemy_config as the app will handle it's lifecycle.
-    sqlalchemy_engine = create_async_engine(settings.async_database_url)
-    async with sqlalchemy_engine.begin() as conn:
+    engine = create_async_engine(settings.async_database_url)
+    async with engine.begin() as conn:
         await conn.run_sync(sqlalchemy_config.metadata.drop_all)
         await conn.run_sync(sqlalchemy_config.metadata.create_all)
-    sessionmaker = async_sessionmaker(sqlalchemy_engine)
-    async with sessionmaker() as session:
+    session_maker = async_sessionmaker(engine)
+    async with session_maker() as session:
         yield session
-    await sqlalchemy_engine.dispose()
+    await engine.dispose()
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -102,7 +101,6 @@ async def create_user(db_session: AsyncSession, faker: Faker):
                 admin=admin,
                 verified=verified,
             ),
-            auto_commit=True,
         )
 
     return _run
